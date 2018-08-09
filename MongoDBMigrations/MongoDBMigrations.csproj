@@ -12,7 +12,7 @@
     <RepositoryUrl>https://bitbucket.org/i_am_a_kernel/mongodbmigrations</RepositoryUrl>
     <Description>MongoDbMigrations using the official MongoDB C# Driver to migrate your documents in database.</Description>
     <PackageTags>mongo mongodb migration</PackageTags>
-    <PackageLicenseUrl>https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageLicenseUrl>https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
