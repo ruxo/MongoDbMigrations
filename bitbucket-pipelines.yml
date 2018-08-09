@@ -1,6 +1,7 @@
 image: microsoft/dotnet:sdk
 pipelines:
-  default:
+  custom:
+    nuget:
     - step:
         caches:
           - dotnetcore
