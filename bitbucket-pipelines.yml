@@ -1,0 +1,15 @@
+image: microsoft/dotnet:sdk
+pipelines:
+  default:
+    - step:
+        caches:
+          - dotnetcore
+        script:
+          # Restore packages
+          - dotnet restore
+          # Build project
+          - dotnet build
+          # Create package
+          - dotnet pack --configuration ${BUILD_CONFIGURATION}
+          # Push generated package(s)
+          - dotnet nuget push bin/${BUILD_CONFIGURATION}/*.nupkg -k ${MYGET_NUGET_APIKEY} -s https://api.nuget.org/v3/index.json
