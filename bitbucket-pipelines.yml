@@ -12,4 +12,4 @@ pipelines:
           # Create package
           - dotnet pack --configuration ${BUILD_CONFIGURATION}
           # Push generated package(s)
-          - dotnet nuget push bin/${BUILD_CONFIGURATION}/*.nupkg -k ${MYGET_NUGET_APIKEY} -s https://api.nuget.org/v3/index.json
+          - dotnet nuget push MongoDBMigrations/bin/${BUILD_CONFIGURATION}/*.nupkg -k ${MYGET_NUGET_APIKEY} -s https://api.nuget.org/v3/index.json
