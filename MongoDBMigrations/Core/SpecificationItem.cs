@@ -15,7 +15,10 @@ namespace MongoDBMigrations
 
         [BsonElement("v")]
         public Version Ver { get; set; }
-        
+
+        [BsonElement("d")]
+        public bool isUp { get; set; }
+
         [BsonElement("applied")]
         [BsonDateTimeOptions(Kind = DateTimeKind.Utc, Representation = BsonType.DateTime)]
         public DateTime ApplyingDateTime {get;set;}

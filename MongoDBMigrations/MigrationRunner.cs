@@ -47,6 +47,8 @@ namespace MongoDBMigrations
             var migrations = Locator.GetMigrations(currentVerstion, targetVersion);
             var serverNames = string.Join(',', Database.Client.Settings.Servers);
 
+            var isUp = targetVersion > currentVerstion;
+
             if (!migrations.Any())
             {
                 yield return new MigrationResult
@@ -61,19 +63,23 @@ namespace MongoDBMigrations
 
             foreach (var migration in migrations)
             {
-                if (targetVersion > currentVerstion)
+                if (isUp)
                     migration.Up(Database);
                 else
                     migration.Down(Database);
 
-                Status.SaveMigration(migration);
+                var m = Status.SaveMigration(migration, isUp);
                 yield return new MigrationResult
                 {
                     MigrationName = migration.Name,
-                    TargetVersion = migration.Version,
+                    TargetVersion = m.Ver,
                     ServerAdress = serverNames,
                     DatabaseName = Database.DatabaseNamespace.DatabaseName,
-                    Message = $"Applying migration {migration.Name}, to version {migration.Version}. Database: {Database.DatabaseNamespace.DatabaseName}. Servers: {serverNames}"
+                    Message = string.Format("Applying migration {0}, to version {1}. Database: {2}. Servers: {3}",
+                        migration.Name,
+                        m.Ver,
+                        Database.DatabaseNamespace.DatabaseName,
+                        serverNames)
                 };
             }
 

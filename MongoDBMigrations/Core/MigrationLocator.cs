@@ -88,6 +88,9 @@ namespace MongoDBMigrations
             else
                 return Enumerable.Empty<IMigration>();
 
+            if (targetVerstion != Version.V1() && migrations.Last().Version != targetVerstion)
+                throw new MigrationNotFoundException(_assembly.FullName, null);
+
             return migrations;
         }
 

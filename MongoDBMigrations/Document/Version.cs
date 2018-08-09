@@ -13,6 +13,11 @@ namespace MongoDBMigrations
         public readonly int Minor;
         public readonly int Revision;
 
+        public static Version V1()
+        {
+            return new Version(1, 0, 0);
+        }
+
         public Version(string version)
         {
             string[] parts = version.Split(VERSION_SPLITTER);

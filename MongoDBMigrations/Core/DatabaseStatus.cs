@@ -84,14 +84,29 @@ namespace MongoDBMigrations
         /// <summary>
         /// Commit migration to the database.
         /// </summary>
-        public void SaveMigration(IMigration migration)
+        /// <param name="migration">Migration instance.</param>
+        /// <param name="isUp">True if roll forward otherwise roll back.</param>
+        /// <returns>Applied migration.</returns>
+        public SpecificationItem SaveMigration(IMigration migration, bool isUp)
         {
-            GetAppliedMigrations().InsertOne(new SpecificationItem
+            var rollbackSpecification = _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME)
+                .Find(x => x.Ver < migration.Version)
+                .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
+                .FirstOrDefault();
+
+            var rollbackVersion = Version.V1();
+            if (rollbackSpecification != null)
+                rollbackVersion = rollbackSpecification.Ver;
+
+            var appliedMigration = new SpecificationItem
             {
                 Name = migration.Name,
-                Ver = migration.Version,
+                Ver = isUp ? migration.Version : rollbackVersion,
+                isUp = isUp,
                 ApplyingDateTime = DateTime.UtcNow
-            });
+            };
+            GetAppliedMigrations().InsertOne(appliedMigration);
+            return appliedMigration;
         }
     }
 }
