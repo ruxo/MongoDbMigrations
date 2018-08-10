@@ -6,12 +6,13 @@
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database
 No more downtime for schema-migrations. Just write small and simple `migrations`.
 
-We need migrations when:
-1. Rename collections
-1. Rename keys
-1. Manipulate data types
-1. Index creation
-1. Removing collections / data
+We need migrations when:  
+  **1.** Rename collections  
+  **2.** Rename keys  
+  **3.** Manipulate data types  
+  **4.** Index creation  
+  **5.** Removing collections / data  
+  
 
 ### New Features!
   - Roll forward/back manual created migrations
@@ -23,9 +24,9 @@ We need migrations when:
   - Testable migrations
   - Migration as part of CI
   - Async implementation
-  - 
+
 ### Installation
-MongoDBMigrations tested with .NET Core 2.0+
+MongoDBMigrations tested with .NET Core 2.0+  
 https://www.nuget.org/packages/MongoDBMigrations/
 ```
 PM> Install-Package MongoDBMigrations
@@ -84,5 +85,5 @@ Tips
 
 License
 ----
-MongoDbMigrations is licensed under [MIT](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/MIT.md "Read more about the MIT license form"). Refer to license.txt for more information.
+MongoDbMigrations is licensed under [MIT](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/MIT.md "Read more about the MIT license form"). Refer to license.txt for more information.  
 **Free Software, Hell Yeah!**
