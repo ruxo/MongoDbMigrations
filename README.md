@@ -1,6 +1,6 @@
 # MongoDBMigrations
 
-[![NuGet](https://img.shields.io/badge/nuget%20package-v1.0.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+[![NuGet](https://img.shields.io/badge/nuget%20package-v1.0.1-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
 
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database
@@ -15,13 +15,17 @@ We need migrations when:
   
 
 ### New Features!
-  - Roll forward/back manual created migrations
-  - Auto find migrations in assemblies for migration beetwen current and target versions.
+  - Fixed: Search assemble with migrations when method `LookInAssemblyOfType<T>()` doesn't used
+  - Fixed: Runner crash when `runner.UpdateTo()` called without result handling
+  - Fixed: Behavior when target migration not found
+  - Added: Testable migrations
+  - Added: Overload for `LookInAssemblyOfType` method
+  - Added: Fields in `MigrationResult` for progress handling
+  - [See more...](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/ReleaseNotes.md)
 
 ### Next Feature/Todo
   - Diff calculation
   - Auto generated migrations
-  - Testable migrations
   - Migration as part of CI
   - Async implementation
 
@@ -29,7 +33,7 @@ We need migrations when:
 MongoDBMigrations tested with .NET Core 2.0+  
 https://www.nuget.org/packages/MongoDBMigrations/
 ```
-PM> Install-Package MongoDBMigrations
+PM> Install-Package MongoDBMigrations -Version 1.0.1
 ```
 ### How to use
 Create a migration by impelmeting the interface `IMigration`. Best practice for the version is to use [Semantic Versioning](http://semver.org/) but ultimately it is up to you. You could simply use the patch version to count the number of migrations. If there is a duplicate for a specific type an exception is thrown on initialization.
@@ -54,22 +58,39 @@ public class MyTestMigration : IMigration
   
 Use next code for initialize `MigrationRunner` and start migration.
 ```csharp
-var connectionString = "mogno://localhost:27017";
-var dbName = "testDatabase";
+var options = new MigrationRunnerOptions
+{
+    ConnectionString = CONNECTION_STRING,
+    DatabaseName = DATABASE
+};
 //Create instance of runner
-var runner = new MigrationRunner(connectionString, dbName);
-//Find and set assembly with our migrations. 
+var runner = new MigrationRunner(options);
+//Find and set assembly with our migrations. If you don't call this method, runner try to find migrations in assembly from which the call is made
 runner.Locator.LookInAssemblyOfType<MyTestMigration>();
 //Start migration to version 1.1.0 when you don't need result
 runner.UpdateTo(new Version(1,1,0));
 
 //Start migration to version 1.0.0 and getting result of each migration between current and target versions
 var result = runner.UpdateTo(new Version(1,0,0));
-while(result.MoveNext())
+```
+
+You also can get progress of migration process, just subscribe to `MigrationApplied` event
+```csharp
+runner.MigrationApplied += Handle;
+var result = runner.UpdateTo(new Version(1, 1, 0));
+runner.MigrationApplied -= Handle;
+```
+where `Handle` is:
+```csharp
+private void Handle(object sender, MigrationResult result)
 {
-    Console.WriteLine(result.Current.Message);
+    //Result handling
+    Debug.WriteLine(result.Message);
 }
 ```
+If you not test your migration yet, mark it by `IgnoreMigration` attribute, and runner will skip it.
+
+You can't check if database is outdated by calling `runner.Status.IsNotLatestVersion(newestVersion))` or `runner.Status.ThrowIfNotLatestVersion(newestVersion)`. The last one throw `DatabaseOutdatedExcetion` when database is outdated.
 
 Tips
 --
@@ -79,7 +100,7 @@ Tips
 1. Do not couple migrations to your domain types, they will be brittle to change, and the point of a migration is to update the data representation when your model changes.
 1. Stick to the mongo BsonDocument interface or use javascript based mongo commands for migrations, much like with SQL, the mongo javascript API is less likely to change which might break migrations
 1. Add an application startup check that the database is at the correct version **(I plan to implement helpers in feature releases)**
-1. Write tests of your migrations, TDD them from existing data scenarios to new forms **(I plan to implement helpers in feature releases)**
+1. Write tests of your migrations, TDD them from existing data scenarios to new forms. Use `IgnoreMigration`attribute while WIP.
 1. Automate the deployment of migrations **(I plan to implement helpers in feature releases)**
 
 

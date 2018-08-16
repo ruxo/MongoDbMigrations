@@ -11,6 +11,6 @@ pipelines:
           # Build project
           - dotnet build
           # Create package
-          - dotnet pack --configuration ${BUILD_CONFIGURATION}
+          - dotnet pack MongoDBMigrations/MongoDBMigrations.csproj --configuration ${BUILD_CONFIGURATION}
           # Push generated package(s)
           - dotnet nuget push MongoDBMigrations/bin/${BUILD_CONFIGURATION}/*.nupkg -k ${MYGET_NUGET_APIKEY} -s https://api.nuget.org/v3/index.json
