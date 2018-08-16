@@ -9,5 +9,7 @@ namespace MongoDBMigrations
         public string ServerAdress;
         public string DatabaseName;
         public string Message;
+        public int CurrentNumber;
+        public int TotalCount;
     }
 }
