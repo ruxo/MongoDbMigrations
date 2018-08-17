@@ -13,6 +13,27 @@ namespace MongoDBMigrations.Test
 
 
         [TestMethod]
+        public void Database_Migrate_Simple_WithValidation_Success()
+        {
+            var options = new MigrationRunnerOptions
+            {
+                ConnectionString = CONNECTION_STRING,
+                DatabaseName = DATABASE,
+                MigrationProjectLocation = @"C:\Users\artur\source\repos\MongoDBMigrations\MongoDBMigrations.Test\MongoDBMigrations.Test.csproj",
+                IsSchemeValidationActive = true
+            };
+
+            var runner = new MigrationRunner(options);
+            runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
+            runner.MigrationApplied += Handle;
+            var result = runner.UpdateTo(new Version(1, 1, 0));
+            Debug.WriteLine(result.Message);
+            runner.MigrationApplied -= Handle;
+
+            Assert.AreEqual(new Version(1, 1, 0).ToString(), result.TargetVersion.ToString());
+        }
+
+        [TestMethod]
         public void Database_Migrate_Simple_Success()
         {
             var options = new MigrationRunnerOptions

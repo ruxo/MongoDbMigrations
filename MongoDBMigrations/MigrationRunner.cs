@@ -23,7 +23,7 @@ namespace MongoDBMigrations
 
         private readonly MigrationRunnerOptions _options;
 
-        //[Obsolete("This ctor is obsolete and can be removed in feature releases. Please use MigrationRunner(MigrationRunnerOptions options) instead.")]
+        [Obsolete("This ctor is obsolete and can be removed in feature releases. Please use MigrationRunner(MigrationRunnerOptions options) instead.")]
         public MigrationRunner(string connectionString, string databaseName)
             : this(new MongoClient(connectionString).GetDatabase(databaseName))
         { }
@@ -43,7 +43,7 @@ namespace MongoDBMigrations
             _options = options;
         }
 
-        //[Obsolete("This ctor is obsolete and can be removed in feature releases. Please use MigrationRunner(MigrationRunnerOptions options) instead.")]
+        [Obsolete("This ctor is obsolete and can be removed in feature releases. Please use MigrationRunner(MigrationRunnerOptions options) instead.")]
         public MigrationRunner(IMongoDatabase database)
         {
             this.Database = database;
@@ -85,6 +85,12 @@ namespace MongoDBMigrations
                     DatabaseName = Database.DatabaseNamespace.DatabaseName,
                     Message = "Nothing to update."
                 };
+            }
+
+            if(_options.IsSchemeValidationActive && !string.IsNullOrEmpty(_options.MigrationProjectLocation))
+            {
+                var validator = new MongoSchemeValidator();
+                var validationResult = validator.Validate(migrations, isUp, _options.MigrationProjectLocation, Database);
             }
 
             var totalCount = migrations.Length;
