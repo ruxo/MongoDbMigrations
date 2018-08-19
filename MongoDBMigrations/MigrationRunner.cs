@@ -17,6 +17,11 @@ namespace MongoDBMigrations
         /// </summary>
         public event EventHandler<MigrationResult> MigrationApplied;
 
+        /// <summary>
+        /// Event rised when some action needs confirmation.
+        /// </summary>
+        public event EventHandler<ConfirmationEventArgs> Confirm;
+
         public IMongoDatabase Database { get; set; }
         public MigrationLocator Locator { get; set; }
         public DatabaseStatus Status { get; set; }
@@ -87,10 +92,44 @@ namespace MongoDBMigrations
                 };
             }
 
-            if(_options.IsSchemeValidationActive && !string.IsNullOrEmpty(_options.MigrationProjectLocation))
+            if (_options.IsSchemeValidationActive && !string.IsNullOrEmpty(_options.MigrationProjectLocation))
             {
                 var validator = new MongoSchemeValidator();
                 var validationResult = validator.Validate(migrations, isUp, _options.MigrationProjectLocation, Database);
+                if (validationResult.FailedCollections.Any())
+                {
+                    if (Confirm != null)
+                    {
+                        var confirmation = new ConfirmationEventArgs
+                        {
+                            Question = string.Format("Next collection in your database failed document scheme validation: \n {0} \n Continue? (y/n):",
+                            string.Join("\n", validationResult.FailedCollections))
+                        };
+                        Confirm(this, confirmation);
+                        if (!confirmation.Continue)
+                            return new MigrationResult
+                            {
+                                MigrationName = string.Empty,
+                                TargetVersion = targetVersion,
+                                ServerAdress = serverNames,
+                                DatabaseName = Database.DatabaseNamespace.DatabaseName,
+                                Message = string.Format("Next collection in your database failed document scheme validation: \n {0}",
+                                    string.Join("\n", validationResult.FailedCollections))
+                            };
+                    }
+                    else
+                    {
+                        return new MigrationResult
+                        {
+                            MigrationName = string.Empty,
+                            TargetVersion = targetVersion,
+                            ServerAdress = serverNames,
+                            DatabaseName = Database.DatabaseNamespace.DatabaseName,
+                            Message = string.Format("Next collection in your database failed document scheme validation: \n {0}",
+                                    string.Join("\n", validationResult.FailedCollections))
+                        };
+                    }
+                }
             }
 
             var totalCount = migrations.Length;

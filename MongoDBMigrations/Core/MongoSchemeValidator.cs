@@ -14,7 +14,7 @@ namespace MongoDBMigrations.Core
 {
     public class MongoSchemeValidator
     {
-        private readonly string[] LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS = new string[]
+        private List<string> LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS = new List<string>
         {
             "GetCollection",
             "CreateCollection",
@@ -23,55 +23,108 @@ namespace MongoDBMigrations.Core
             "DropCollectionAsync"
         };
 
-        public IDictionary<string, bool> Validate(IEnumerable<IMigration> migrations, bool isUp, string pathToMigrationProj, IMongoDatabase database)
+        /// <summary>
+        /// List of method names in which the collection name is used. 
+        /// They were taken from the IMongoDatabase interface.
+        /// </summary>
+        public List<string> MethodMarkers { get => LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS; }
+
+        /// <summary>
+        /// Add new method name to MethodMarkers collection, it will be added if it not exist.
+        /// </summary>
+        /// <param name="methodName">Method name</param>
+        public void RegisterMethodMarker(string methodName)
+        {
+            if (LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS.Any(i => i.Equals(methodName, StringComparison.CurrentCultureIgnoreCase)))
+            {
+                return;
+            }
+
+            LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS.Add(methodName);
+        }
+
+        /// <summary>
+        /// This method check documents which will be affected by migration. For successful result all
+        /// documents in collection must have the same scheme otherwise validation will be failed.
+        /// </summary>
+        /// <param name="migrations">List of migration that preparing for applying</param>
+        /// <param name="isUp">Migration direction</param>
+        /// <param name="pathToMigrationProj">Absolute path to *.csproj file with migration</param>
+        /// <param name="database">Instance of mongo database</param>
+        /// <returns></returns>
+        public SchemeValidationResult Validate(IEnumerable<IMigration> migrations, bool isUp, string pathToMigrationProj, IMongoDatabase database)
         {
             if (string.IsNullOrEmpty(pathToMigrationProj))
                 throw new ArgumentNullException(nameof(pathToMigrationProj));
 
+            if (database == null)
+                throw new ArgumentNullException(nameof(database));
+
+            if (migrations == null)
+                throw new ArgumentNullException(nameof(migrations));
+
             if (!migrations.Any())
-                return new Dictionary<string, bool>(0);
+                return new SchemeValidationResult();
 
             string methodName = isUp ? nameof(IMigration.Up) : nameof(IMigration.Down);
+            var allowedMigrationNames = migrations.Select(t => t.GetType().Name);
 
             var workspace = CreateRoslynWorkspace(pathToMigrationProj);
             var project = workspace.CurrentSolution.Projects.Single(prj => prj.FilePath == pathToMigrationProj);
 
             var compilation = project.GetCompilationAsync().Result;
-            var allowedMigrationNames = migrations.Select(t => t.GetType().Name);
-            var syntaxTreesForAnalyzing = new List<SyntaxTree>();
+
+            var finder = new MigrationMethodsFinder(allowedMigrationNames, methodName);
+            var collectionNames = new List<string>();
             foreach (var file in project.Documents)
             {
-                var migrationClassDeclaration = file.GetSyntaxTreeAsync().Result
-                    .GetRoot()
-                    .DescendantNodes()
-                    .OfType<ClassDeclarationSyntax>()
-                    .SingleOrDefault(x => allowedMigrationNames.Contains(x.Identifier.ValueText));
-
-                if (migrationClassDeclaration == null)
-                    continue;
-
-                syntaxTreesForAnalyzing.Add(migrationClassDeclaration.SyntaxTree);
-            }
-
-            var collectionNames = new List<string>();
-            foreach (var tree in syntaxTreesForAnalyzing)
-            {
-                var model = compilation.GetSemanticModel(tree);
-                var method = tree
-                    .GetRoot()
-                    .DescendantNodes()
-                    .OfType<MethodDeclarationSyntax>()
-                    .Single(x => x.Identifier.ValueText == methodName);
-
-                collectionNames.AddRange(FindCollectionNames(model, method));
+                var tree = file.GetSyntaxTreeAsync().Result;
+                var methods = finder.FindMethods(tree.GetRoot());
+                if(methods.Any())
+                {
+                    var model = compilation.GetSemanticModel(tree);
+                    collectionNames.AddRange(methods.SelectMany(item => FindCollectionNames(model, item)));
+                }
             }
 
             return Check(database, collectionNames);
         }
 
-        private IDictionary<string, bool> Check(IMongoDatabase database, IEnumerable<string> names)
+        /// <summary>
+        /// Search collection names in migration method taking into account the list of method markers.
+        /// </summary>
+        /// <param name="semanticModel">Semantic model of migration class</param>
+        /// <param name="node">Syntax node of migration method (Up or Down)</param>
+        /// <returns></returns>
+        protected virtual IEnumerable<string> FindCollectionNames(SemanticModel semanticModel, SyntaxNode node)
         {
-            var result = new Dictionary<string, bool>();
+            var arguments = node
+                .DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Where(sn => LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS.Contains(semanticModel.GetSymbolInfo(sn).Symbol.Name))
+                .SelectMany(sn => sn
+                    .DescendantNodes()
+                    .OfType<LiteralExpressionSyntax>()
+                    .Select(lit => lit.GetText().ToString()));
+
+            return arguments.Distinct().Select(x => x.Trim('"'));
+        }
+
+        /// <summary>
+        /// Create the Roslyn workspace for you project
+        /// </summary>
+        /// <param name="projLocation">Absolute path to the *.csproj or project.json file</param>
+        /// <returns>Roslyn workspace</returns>
+        protected virtual Workspace CreateRoslynWorkspace(string projLocation)
+        {
+            var manager = new AnalyzerManager();
+            var analyzer = manager.GetProject(projLocation);
+            return analyzer.GetWorkspace();
+        }
+
+        private SchemeValidationResult Check(IMongoDatabase database, IEnumerable<string> names)
+        {
+            var result = new SchemeValidationResult();
             foreach (var name in names)
             {
                 bool isFailed = false;
@@ -92,7 +145,7 @@ namespace MongoDBMigrations.Core
                         break;
 
                     IEnumerable<BsonDocument> batch = cursor.Current;
-                    foreach(var document in batch)
+                    foreach (var document in batch)
                     {
                         isFailed = !document.Elements.ToDictionary(i => i.Name, i => i.Value.BsonType).SequenceEqual(refScheme);
                     }
@@ -102,27 +155,6 @@ namespace MongoDBMigrations.Core
             }
 
             return result;
-        }
-
-        protected virtual IEnumerable<string> FindCollectionNames(SemanticModel semanticModel, SyntaxNode tree)
-        {
-            var arguments = tree
-                .DescendantNodes()
-                .OfType<InvocationExpressionSyntax>()
-                .Where(sn => LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS.Contains(semanticModel.GetSymbolInfo(sn).Symbol.Name))
-                .SelectMany(sn => sn
-                    .DescendantNodes()
-                    .OfType<LiteralExpressionSyntax>()
-                    .Select(lit => lit.GetText().ToString()));
-
-            return arguments.Select(x => x.Trim('"')).Distinct();
-        }
-
-        protected virtual Workspace CreateRoslynWorkspace(string projLocation)
-        {
-            var manager = new AnalyzerManager();
-            var analyzer = manager.GetProject(projLocation);
-            return analyzer.GetWorkspace();
         }
     }
 }

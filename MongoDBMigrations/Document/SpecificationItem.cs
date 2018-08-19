@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 
-namespace MongoDBMigrations
+namespace MongoDBMigrations.Document
 {
     public class SpecificationItem
     {

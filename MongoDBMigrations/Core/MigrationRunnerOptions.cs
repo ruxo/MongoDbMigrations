@@ -18,7 +18,7 @@
         public string MigrationProjectLocation { get; set; }
 
         /// <summary>
-        /// Is true, runner should validate scheme in collections which will be affected via migrations
+        /// If true, runner should validate scheme in collections which will be affected via migrations
         /// </summary>
         public bool IsSchemeValidationActive { get; set; }
     }
