@@ -19,6 +19,7 @@
 
         /// <summary>
         /// If true, runner should validate scheme in collections which will be affected via migrations
+        /// Enabling this option may increase the time for migration process.
         /// </summary>
         public bool IsSchemeValidationActive { get; set; }
     }
