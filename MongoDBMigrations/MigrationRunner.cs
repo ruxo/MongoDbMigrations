@@ -3,7 +3,8 @@ using System.Linq;
 using MongoDB.Driver;
 using MongoDB.Bson.Serialization;
 using MongoDBMigrations.Core;
-
+using System.Threading.Tasks;
+using MongoDBMigrations.Document;
 
 namespace MongoDBMigrations
 {
@@ -58,6 +59,16 @@ namespace MongoDBMigrations
             BsonSerializer.RegisterSerializer(typeof(Version), new VerstionSerializer());
         }
 
+        public async Task<MigrationResult> UpdateToLatestAsync(Func<SchemeValidationResult, bool> confirmation, IProgress<MigrationResult> progress)
+        {
+            return await UpdateToAsync(Locator.GetNewestLocalVersion(), confirmation, progress);
+        }
+
+        public async Task<MigrationResult> UpdateToLatestAsync(Func<SchemeValidationResult, bool> confirmation)
+        {
+            return await UpdateToAsync(Locator.GetNewestLocalVersion(), confirmation);
+        }
+
         /// <summary>
         /// Migrate to latest found version
         /// </summary>
@@ -65,6 +76,80 @@ namespace MongoDBMigrations
         public MigrationResult UpdateToLatest()
         {
             return UpdateTo(Locator.GetNewestLocalVersion());
+        }
+
+        public async Task<MigrationResult> UpdateToAsync(Version targetVersion, Func<SchemeValidationResult, bool> confirmation,IProgress<MigrationResult> progress)
+        {
+            var currentVerstion = Status.GetVersion();
+            var migrations = Locator.GetMigrations(currentVerstion, targetVersion).ToArray();
+            var serverNames = string.Join(',', Database.Client.Settings.Servers);
+
+            var isUp = targetVersion > currentVerstion;
+
+            if (!migrations.Any())
+            {
+                return MigrationResult.BuildNothingToUpdateResult();
+            }
+
+            if (_options.IsSchemeValidationActive && !string.IsNullOrEmpty(_options.MigrationProjectLocation))
+            {
+                var validator = new MongoSchemeValidator();
+                var validationResult = validator.Validate(migrations, isUp, _options.MigrationProjectLocation, Database);
+                if (validationResult.FailedCollections.Any())
+                {
+                    if (confirmation != null)
+                    {
+                        var confim = confirmation(validationResult);
+                        if(!confim)
+                            return MigrationResult.BuildSchemeValidationFailedResult(validationResult.FailedCollections);
+                    }
+                    else
+                    {
+                        return MigrationResult.BuildSchemeValidationFailedResult(validationResult.FailedCollections);
+                    }
+                }
+            }
+
+            var totalCount = migrations.Length;
+            await Task.Run(() =>
+            {
+                for (int i = 0; i < totalCount; i++)
+                {
+                    if (isUp)
+                        migrations[i].Up(Database);
+                    else
+                        migrations[i].Down(Database);
+
+                    var m = Status.SaveMigration(migrations[i], isUp);
+
+                    if (MigrationApplied == null)
+                        continue;
+
+                    if (progress != null)
+                        progress.Report(new MigrationResult
+                        {
+                            MigrationName = migrations[i].Name,
+                            TargetVersion = m.Ver,
+                            ServerAdress = serverNames,
+                            DatabaseName = Database.DatabaseNamespace.DatabaseName,
+                            Message = string.Format("Applying migration {0}, to version {1}. Database: {2}. Servers: {3}",
+                                migrations[i].Name,
+                                m.Ver,
+                                Database.DatabaseNamespace.DatabaseName,
+                                serverNames),
+                                CurrentNumber = i,
+                                TotalCount = totalCount
+                        });
+                }
+            });
+
+            return MigrationResult
+                .BuildSuccessResult(targetVersion, serverNames, Database.DatabaseNamespace.DatabaseName, totalCount);
+        }
+
+        public async Task<MigrationResult> UpdateToAsync(Version targetVersion, Func<SchemeValidationResult, bool> confirmation)
+        {
+            return await UpdateToAsync(targetVersion, confirmation, null);
         }
 
         /// <summary>
