@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDBMigrations.Core;
 
@@ -29,6 +30,29 @@ namespace MongoDBMigrations.Test
             var result = runner.UpdateTo(new Version(1, 1, 0));
             Debug.WriteLine(result.Message);
             runner.MigrationApplied -= Handle;
+
+            Assert.AreEqual(new Version(1, 1, 0).ToString(), result.TargetVersion.ToString());
+        }
+
+        [TestMethod]
+        public void Database_Migrate_Simple_WithValidationAndConfirmTrue_Success()
+        {
+            var options = new MigrationRunnerOptions
+            {
+                ConnectionString = CONNECTION_STRING,
+                DatabaseName = DATABASE,
+                MigrationProjectLocation = @"C:\Users\artur\source\repos\MongoDBMigrations\MongoDBMigrations.Test\MongoDBMigrations.Test.csproj",
+                IsSchemeValidationActive = true
+            };
+
+            var runner = new MigrationRunner(options);
+            runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
+            runner.MigrationApplied += Handle;
+            runner.Confirm += PositiveConfirmResult;
+            var result = runner.UpdateTo(new Version(1, 1, 0));
+            Debug.WriteLine(result.Message);
+            runner.MigrationApplied -= Handle;
+            runner.Confirm -= PositiveConfirmResult;
 
             Assert.AreEqual(new Version(1, 1, 0).ToString(), result.TargetVersion.ToString());
         }
@@ -126,6 +150,13 @@ namespace MongoDBMigrations.Test
             var runner = new MigrationRunner(options);
             runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
             runner.UpdateTo(Version.V1());
+        }
+
+        private void PositiveConfirmResult(object sender, ConfirmationEventArgs eventArgs)
+        {
+            Debug.WriteLine(eventArgs.Question);
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            eventArgs.Continue = true;            
         }
 
         private void Handle(object sender, MigrationResult result)

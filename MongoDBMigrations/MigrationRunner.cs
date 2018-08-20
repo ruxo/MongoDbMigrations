@@ -82,14 +82,7 @@ namespace MongoDBMigrations
 
             if (!migrations.Any())
             {
-                return new MigrationResult
-                {
-                    MigrationName = string.Empty,
-                    TargetVersion = targetVersion,
-                    ServerAdress = serverNames,
-                    DatabaseName = Database.DatabaseNamespace.DatabaseName,
-                    Message = "Nothing to update."
-                };
+                return MigrationResult.BuildNothingToUpdateResult();
             }
 
             if (_options.IsSchemeValidationActive && !string.IsNullOrEmpty(_options.MigrationProjectLocation))
@@ -107,27 +100,11 @@ namespace MongoDBMigrations
                         };
                         Confirm(this, confirmation);
                         if (!confirmation.Continue)
-                            return new MigrationResult
-                            {
-                                MigrationName = string.Empty,
-                                TargetVersion = targetVersion,
-                                ServerAdress = serverNames,
-                                DatabaseName = Database.DatabaseNamespace.DatabaseName,
-                                Message = string.Format("Next collection in your database failed document scheme validation: \n {0}",
-                                    string.Join("\n", validationResult.FailedCollections))
-                            };
+                            return MigrationResult.BuildSchemeValidationFailedResult(validationResult.FailedCollections);
                     }
                     else
                     {
-                        return new MigrationResult
-                        {
-                            MigrationName = string.Empty,
-                            TargetVersion = targetVersion,
-                            ServerAdress = serverNames,
-                            DatabaseName = Database.DatabaseNamespace.DatabaseName,
-                            Message = string.Format("Next collection in your database failed document scheme validation: \n {0}",
-                                    string.Join("\n", validationResult.FailedCollections))
-                        };
+                        return MigrationResult.BuildSchemeValidationFailedResult(validationResult.FailedCollections);
                     }
                 }
             }
@@ -161,16 +138,8 @@ namespace MongoDBMigrations
                 });
             }
 
-            return new MigrationResult
-            {
-                MigrationName = string.Empty,
-                TargetVersion = targetVersion,
-                ServerAdress = serverNames,
-                DatabaseName = Database.DatabaseNamespace.DatabaseName,
-                Message = $"Migration database {Database.DatabaseNamespace.DatabaseName} to v{targetVersion} has been completed.",
-                CurrentNumber = totalCount,
-                TotalCount = totalCount
-            };
+            return MigrationResult
+                .BuildSuccessResult(targetVersion, serverNames, Database.DatabaseNamespace.DatabaseName, totalCount);
         }
     }
 }
