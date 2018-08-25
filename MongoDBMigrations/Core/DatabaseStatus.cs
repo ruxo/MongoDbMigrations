@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using MongoDB.Driver;
 using MongoDBMigrations.Document;
 
@@ -71,6 +72,18 @@ namespace MongoDBMigrations
         }
 
         /// <summary>
+        /// Return database version based on last applied migration asynchronously.
+        /// </summary>
+        /// <returns>Database version in semantic view.</returns>
+        public Task<Version> GetVersionAsync()
+        {
+            var lastMigrations = GetLastAppliedMigrationAsync().Result;
+            return lastMigrations == null
+                ? Task.FromResult(new Version(1, 0, 0))
+                : Task.FromResult(lastMigrations.Ver);
+        }
+
+        /// <summary>
         /// Find last applied migration by applying date and time.
         /// </summary>
         /// <returns>Applied migration.</returns>
@@ -80,6 +93,18 @@ namespace MongoDBMigrations
                 .Find(FilterDefinition<SpecificationItem>.Empty)
                 .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
                 .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Find last applied migration by applying date and time asynchronously.
+        /// </summary>
+        /// <returns>Applied migration.</returns>
+        public Task<SpecificationItem> GetLastAppliedMigrationAsync()
+        {
+            return GetAppliedMigrations()
+                .Find(FilterDefinition<SpecificationItem>.Empty)
+                .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
+                .FirstOrDefaultAsync();
         }
 
         /// <summary>
@@ -108,6 +133,34 @@ namespace MongoDBMigrations
             };
             GetAppliedMigrations().InsertOne(appliedMigration);
             return appliedMigration;
+        }
+
+        /// <summary>
+        /// Commit migration to the database asynchronously.
+        /// </summary>
+        /// <param name="migration">Migration instance.</param>
+        /// <param name="isUp">True if roll forward otherwise roll back.</param>
+        /// <returns>Applied migration.</returns>
+        public Task<SpecificationItem> SaveMigrationAsync(IMigration migration, bool isUp)
+        {
+            var rollbackSpecification = _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME)
+                .Find(x => x.Ver < migration.Version)
+                .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
+                .FirstOrDefaultAsync().Result;
+
+            var rollbackVersion = Version.V1();
+            if (rollbackSpecification != null)
+                rollbackVersion = rollbackSpecification.Ver;
+
+            var appliedMigration = new SpecificationItem
+            {
+                Name = migration.Name,
+                Ver = isUp ? migration.Version : rollbackVersion,
+                isUp = isUp,
+                ApplyingDateTime = DateTime.UtcNow
+            };
+            GetAppliedMigrations().InsertOneAsync(appliedMigration).Wait();
+            return Task.FromResult(appliedMigration);
         }
     }
 }

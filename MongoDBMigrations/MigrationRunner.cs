@@ -80,7 +80,7 @@ namespace MongoDBMigrations
 
         public async Task<MigrationResult> UpdateToAsync(Version targetVersion, Func<SchemeValidationResult, bool> confirmation,IProgress<MigrationResult> progress)
         {
-            var currentVerstion = Status.GetVersion();
+            var currentVerstion = await Status.GetVersionAsync().ConfigureAwait(false);
             var migrations = Locator.GetMigrations(currentVerstion, targetVersion).ToArray();
             var serverNames = string.Join(',', Database.Client.Settings.Servers);
 
@@ -111,7 +111,7 @@ namespace MongoDBMigrations
             }
 
             var totalCount = migrations.Length;
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 for (int i = 0; i < totalCount; i++)
                 {
@@ -120,10 +120,7 @@ namespace MongoDBMigrations
                     else
                         migrations[i].Down(Database);
 
-                    var m = Status.SaveMigration(migrations[i], isUp);
-
-                    if (MigrationApplied == null)
-                        continue;
+                    var m = await Status.SaveMigrationAsync(migrations[i], isUp);
 
                     if (progress != null)
                         progress.Report(new MigrationResult
@@ -137,11 +134,11 @@ namespace MongoDBMigrations
                                 m.Ver,
                                 Database.DatabaseNamespace.DatabaseName,
                                 serverNames),
-                                CurrentNumber = i,
+                                CurrentNumber = i + 1,
                                 TotalCount = totalCount
                         });
                 }
-            });
+            }).ConfigureAwait(false);
 
             return MigrationResult
                 .BuildSuccessResult(targetVersion, serverNames, Database.DatabaseNamespace.DatabaseName, totalCount);
@@ -218,7 +215,7 @@ namespace MongoDBMigrations
                         m.Ver,
                         Database.DatabaseNamespace.DatabaseName,
                         serverNames),
-                    CurrentNumber = i,
+                    CurrentNumber = i + 1,
                     TotalCount = totalCount
                 });
             }
