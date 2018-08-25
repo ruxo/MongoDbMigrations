@@ -1,6 +1,7 @@
 ﻿using Buildalyzer;
 using Buildalyzer.Workspaces;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -105,6 +106,7 @@ namespace MongoDBMigrations.Core
                 .SelectMany(sn => sn
                     .DescendantNodes()
                     .OfType<LiteralExpressionSyntax>()
+                    .Where(lit => lit.IsKind(SyntaxKind.StringLiteralExpression))
                     .Select(lit => lit.GetText().ToString()));
 
             return arguments.Distinct().Select(x => x.Trim('"'));
