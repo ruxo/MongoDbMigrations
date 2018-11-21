@@ -47,7 +47,7 @@ namespace MongoDBMigrations.Test
             {
                 if(validationResult.FailedCollections.Any())
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(2));
+                    //Thread.Sleep(TimeSpan.FromSeconds(2));
                 }
                 return true;
             }).Result;
