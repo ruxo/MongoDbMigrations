@@ -1,4 +1,4 @@
-image: microsoft/dotnet:sdk
+image: microsoft/dotnet:2.1-sdk
 pipelines:
   custom:
     nuget:
@@ -9,7 +9,7 @@ pipelines:
           # Restore packages
           - dotnet restore
           # Build project
-          - dotnet build
+          - dotnet build --configuration Release
           # Create package
           - dotnet pack MongoDBMigrations/MongoDBMigrations.csproj --configuration ${BUILD_CONFIGURATION}
           # Push generated package(s)
