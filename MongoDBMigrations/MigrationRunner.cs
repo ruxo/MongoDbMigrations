@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using MongoDB.Driver;
 using MongoDB.Bson.Serialization;
 using MongoDBMigrations.Core;
-using System.Threading.Tasks;
 using MongoDBMigrations.Document;
 
 namespace MongoDBMigrations
@@ -59,32 +59,23 @@ namespace MongoDBMigrations
             BsonSerializer.RegisterSerializer(typeof(Version), new VerstionSerializer());
         }
 
-        public async Task<MigrationResult> UpdateToLatestAsync(Func<SchemeValidationResult, bool> confirmation, IProgress<MigrationResult> progress)
+        public Task<MigrationResult> UpdateToLatestAsync(Func<SchemeValidationResult, bool> confirmation, IProgress<MigrationResult> progress)
         {
-            return await UpdateToAsync(Locator.GetNewestLocalVersion(), confirmation, progress);
+            return UpdateToAsync(Locator.GetNewestLocalVersion(), confirmation, progress);
         }
 
-        public async Task<MigrationResult> UpdateToLatestAsync(Func<SchemeValidationResult, bool> confirmation)
+        public Task<MigrationResult> UpdateToLatestAsync(Func<SchemeValidationResult, bool> confirmation)
         {
-            return await UpdateToAsync(Locator.GetNewestLocalVersion(), confirmation);
-        }
-
-        /// <summary>
-        /// Migrate to latest found version
-        /// </summary>
-        /// <returns>Message about result of migrating.</returns>
-        public MigrationResult UpdateToLatest()
-        {
-            return UpdateTo(Locator.GetNewestLocalVersion());
+            return UpdateToAsync(Locator.GetNewestLocalVersion(), confirmation);
         }
 
         public async Task<MigrationResult> UpdateToAsync(Version targetVersion, Func<SchemeValidationResult, bool> confirmation,IProgress<MigrationResult> progress)
         {
             var currentVerstion = await Status.GetVersionAsync().ConfigureAwait(false);
-            var migrations = Locator.GetMigrations(currentVerstion, targetVersion).ToArray();
             var serverNames = string.Join(',', Database.Client.Settings.Servers);
-
             var isUp = targetVersion > currentVerstion;
+
+            var migrations = Locator.GetMigrations(currentVerstion, targetVersion).ToArray();
 
             if (!migrations.Any())
             {
@@ -144,9 +135,18 @@ namespace MongoDBMigrations
                 .BuildSuccessResult(targetVersion, serverNames, Database.DatabaseNamespace.DatabaseName, totalCount);
         }
 
-        public async Task<MigrationResult> UpdateToAsync(Version targetVersion, Func<SchemeValidationResult, bool> confirmation)
+        public Task<MigrationResult> UpdateToAsync(Version targetVersion, Func<SchemeValidationResult, bool> confirmation)
         {
-            return await UpdateToAsync(targetVersion, confirmation, null);
+            return UpdateToAsync(targetVersion, confirmation, null);
+        }
+
+        /// <summary>
+        /// Migrate to latest found version
+        /// </summary>
+        /// <returns>Message about result of migrating.</returns>
+        public MigrationResult UpdateToLatest()
+        {
+            return UpdateTo(Locator.GetNewestLocalVersion());
         }
 
         /// <summary>

@@ -15,7 +15,12 @@ namespace MongoDBMigrations.Core
 {
     public class MongoSchemeValidator
     {
-        private List<string> LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS = new List<string>
+
+        /// <summary>
+        /// List of method names in which the collection name is used. 
+        /// They were taken from the IMongoDatabase interface.
+        /// </summary>
+        public List<string> MethodMarkers { get; } = new List<string>
         {
             "GetCollection",
             "CreateCollection",
@@ -25,23 +30,17 @@ namespace MongoDBMigrations.Core
         };
 
         /// <summary>
-        /// List of method names in which the collection name is used. 
-        /// They were taken from the IMongoDatabase interface.
-        /// </summary>
-        public List<string> MethodMarkers { get => LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS; }
-
-        /// <summary>
         /// Add new method name to MethodMarkers collection, it will be added if it not exist.
         /// </summary>
         /// <param name="methodName">Method name</param>
         public void RegisterMethodMarker(string methodName)
         {
-            if (LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS.Any(i => i.Equals(methodName, StringComparison.CurrentCultureIgnoreCase)))
+            if (MethodMarkers.Any(i => i.Equals(methodName, StringComparison.CurrentCultureIgnoreCase)))
             {
                 return;
             }
 
-            LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS.Add(methodName);
+            MethodMarkers.Add(methodName);
         }
 
         /// <summary>
@@ -102,7 +101,7 @@ namespace MongoDBMigrations.Core
             var arguments = node
                 .DescendantNodes()
                 .OfType<InvocationExpressionSyntax>()
-                .Where(sn => LIST_OF_MONGO_COLLECTION_INTERACTIVE_METHODS.Contains(semanticModel.GetSymbolInfo(sn).Symbol.Name))
+                .Where(sn => MethodMarkers.Contains(semanticModel.GetSymbolInfo(sn).Symbol.Name))
                 .SelectMany(sn => sn
                     .DescendantNodes()
                     .OfType<LiteralExpressionSyntax>()
