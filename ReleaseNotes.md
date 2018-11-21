@@ -1,5 +1,13 @@
 # MongoDBMigrations
 
+### v1.1.0
+  - Added: MongoDB document schema uniformity validation
+  - Added: Async impl for runner and database locator
+  - Added: Progress returning mechanism
+  - Added: Cancelation mechanism
+
+***
+
 ### v1.0.1
   - Fixed: Search assemble with migrations when method `LookInAssemblyOfType<T>()` doesn't used
   - Fixed: Runner crash when `runner.UpdateTo()` called without result handling

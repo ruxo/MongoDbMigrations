@@ -13,7 +13,8 @@
     <Description>MongoDbMigrations using the official MongoDB C# Driver to migrate your documents in database.</Description>
     <PackageTags>mongo mongodb migration schema-migration csharp dotnet schema</PackageTags>
     <PackageLicenseUrl>https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/MIT.md</PackageLicenseUrl>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
+    <PackageReleaseNotes>https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/ReleaseNotes.md</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

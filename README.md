@@ -1,6 +1,6 @@
 # MongoDBMigrations
 
-[![NuGet](https://img.shields.io/badge/nuget%20package-v1.0.1-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
 
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database
@@ -15,25 +15,20 @@ We need migrations when:
   
 
 ### New Features!
-  - Fixed: Search assemble with migrations when method `LookInAssemblyOfType<T>()` doesn't used
-  - Fixed: Runner crash when `runner.UpdateTo()` called without result handling
-  - Fixed: Behavior when target migration not found
-  - Added: Testable migrations
-  - Added: Overload for `LookInAssemblyOfType` method
-  - Added: Fields in `MigrationResult` for progress handling
+  - Added: MongoDB document schema uniformity validation
+  - Added: Async impl for runner and database locator
   - [See more...](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/ReleaseNotes.md)
 
 ### Next Feature/Todo
   - Diff calculation
   - Auto generated migrations
   - Migration as part of CI
-  - Async implementation
 
 ### Installation
 MongoDBMigrations tested with .NET Core 2.0+  
 https://www.nuget.org/packages/MongoDBMigrations/
 ```
-PM> Install-Package MongoDBMigrations -Version 1.0.1
+PM> Install-Package MongoDBMigrations -Version 1.1.0
 ```
 ### How to use
 Create a migration by impelmeting the interface `IMigration`. Best practice for the version is to use [Semantic Versioning](http://semver.org/) but ultimately it is up to you. You could simply use the patch version to count the number of migrations. If there is a duplicate for a specific type an exception is thrown on initialization.
@@ -61,7 +56,9 @@ Use next code for initialize `MigrationRunner` and start migration.
 var options = new MigrationRunnerOptions
 {
     ConnectionString = CONNECTION_STRING,
-    DatabaseName = DATABASE
+    DatabaseName = DATABASE,
+    IsSchemeValidationActive = true, // Use true for engage schema validation, otherwise false
+    MigrationProjectLocation = @"<some_path_here>" //also needs for schema validation, it's absolute path for *.csproj file with migration classes
 };
 //Create instance of runner
 var runner = new MigrationRunner(options);
@@ -88,6 +85,17 @@ private void Handle(object sender, MigrationResult result)
     Debug.WriteLine(result.Message);
 }
 ```
+If you wanna use database document schema validation, please subscribe on event `Confirm` in runner. Inside of handler you can display some message and ask confirmation in following way:
+```csharp
+private void ConfirmHandler(object sender, ConfirmationEventArgs eventArgs)
+{
+    Console.WriteLine("Documents in db are inconsistent.");
+    // Some code for handling confirmation
+    eventArgs.Continue = true; //True if you still want to continue (it can brake you data), otherwise false. 
+}
+```
+**In case if handler does not found and validation has failed** - migration process will cancel automatically.
+
 If you not test your migration yet, mark it by `IgnoreMigration` attribute, and runner will skip it.
 
 You can't check if database is outdated by calling `runner.Status.IsNotLatestVersion(newestVersion))` or `runner.Status.ThrowIfNotLatestVersion(newestVersion)`. The last one throw `DatabaseOutdatedExcetion` when database is outdated.

@@ -155,7 +155,6 @@ namespace MongoDBMigrations.Test
         private void PositiveConfirmResult(object sender, ConfirmationEventArgs eventArgs)
         {
             Debug.WriteLine(eventArgs.Question);
-            //Thread.Sleep(TimeSpan.FromSeconds(2));
             eventArgs.Continue = true;
         }
 

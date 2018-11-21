@@ -45,10 +45,6 @@ namespace MongoDBMigrations.Test
             runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
             var result = runner.UpdateToAsync(new Version(1, 1, 0), (validationResult) =>
             {
-                if(validationResult.FailedCollections.Any())
-                {
-                    //Thread.Sleep(TimeSpan.FromSeconds(2));
-                }
                 return true;
             }).Result;
             Debug.WriteLine(result.Message);
