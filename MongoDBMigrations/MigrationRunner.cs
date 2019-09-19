@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
@@ -72,7 +73,7 @@ namespace MongoDBMigrations
         public async Task<MigrationResult> UpdateToAsync(Version targetVersion, Func<SchemeValidationResult, bool> confirmation,IProgress<MigrationResult> progress)
         {
             var currentVerstion = await Status.GetVersionAsync().ConfigureAwait(false);
-            var serverNames = string.Join(',', Database.Client.Settings.Servers);
+            var serverNames = string.Join(",", Database.Client.Settings.Servers);
             var isUp = targetVersion > currentVerstion;
 
             var migrations = Locator.GetMigrations(currentVerstion, targetVersion).ToArray();
@@ -158,7 +159,7 @@ namespace MongoDBMigrations
         {
             var currentVerstion = Status.GetVersion();
             var migrations = Locator.GetMigrations(currentVerstion, targetVersion).ToArray();
-            var serverNames = string.Join(',', Database.Client.Settings.Servers);
+            var serverNames = string.Join(",", Database.Client.Settings.Servers);
 
             var isUp = targetVersion > currentVerstion;
 
