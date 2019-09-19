@@ -11,7 +11,7 @@ namespace MongoDBMigrations.Test
 
         [TestMethod]
         [ExpectedException(typeof(MigrationNotFoundException))]
-        public void Database_Migrate_To_Verstion_Without_Impl_Should_Throw_Exception()
+        public void Database_Migrate_To_Version_Without_Impl_Should_Throw_Exception()
         {
             var options = new MigrationRunnerOptions
             {
