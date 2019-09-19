@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Driver;
 using MongoDBMigrations.Core;
@@ -42,10 +43,10 @@ namespace MongoDBMigrations.Test
             locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
             var migration = locator.GetMigrations(Version.V1(), new Version(1, 1, 0));
             var database = new MongoClient(CONNECTION_STRING).GetDatabase(DATABASE);
-
+            
             var result = validator.Validate(migration
                 , true
-                , @"C:\Users\artur\source\repos\MongoDBMigrations\MongoDBMigrations.Test\MongoDBMigrations.Test.csproj"
+                , DirectoryExtensions.GetCsprojWithTestsDirectoryFullPath()
                 , database);
 
             Assert.IsFalse(result.FailedCollections.Any());

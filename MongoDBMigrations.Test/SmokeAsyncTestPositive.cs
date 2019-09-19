@@ -38,7 +38,7 @@ namespace MongoDBMigrations.Test
                 ConnectionString = CONNECTION_STRING,
                 DatabaseName = DATABASE,
                 IsSchemeValidationActive = true,
-                MigrationProjectLocation = @"C:\Users\artur\source\repos\MongoDBMigrations\MongoDBMigrations.Test\MongoDBMigrations.Test.csproj"
+                MigrationProjectLocation = DirectoryExtensions.GetCsprojWithTestsDirectoryFullPath()
             };
 
             var runner = new MigrationRunner(options);

@@ -20,7 +20,7 @@ namespace MongoDBMigrations.Test
             {
                 ConnectionString = CONNECTION_STRING,
                 DatabaseName = DATABASE,
-                MigrationProjectLocation = @"C:\Users\artur\source\repos\MongoDBMigrations\MongoDBMigrations.Test\MongoDBMigrations.Test.csproj",
+                MigrationProjectLocation = DirectoryExtensions.GetCsprojWithTestsDirectoryFullPath(),
                 IsSchemeValidationActive = true
             };
 
@@ -41,7 +41,7 @@ namespace MongoDBMigrations.Test
             {
                 ConnectionString = CONNECTION_STRING,
                 DatabaseName = DATABASE,
-                MigrationProjectLocation = @"C:\Users\artur\source\repos\MongoDBMigrations\MongoDBMigrations.Test\MongoDBMigrations.Test.csproj",
+                MigrationProjectLocation = DirectoryExtensions.GetCsprojWithTestsDirectoryFullPath(),
                 IsSchemeValidationActive = true
             };
 
