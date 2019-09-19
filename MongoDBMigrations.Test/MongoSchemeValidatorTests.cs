@@ -9,9 +9,6 @@ namespace MongoDBMigrations.Test
     [TestClass]
     public class MongoSchemeValidatorTests
     {
-        private const string CONNECTION_STRING = "mongodb://localhost:27017";
-        private const string DATABASE = "test";
-
         [TestMethod]
         public void TryAddMethodMarkerSuccess()
         {
@@ -42,7 +39,7 @@ namespace MongoDBMigrations.Test
             var locator = new MigrationLocator();
             locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
             var migration = locator.GetMigrations(Version.V1(), new Version(1, 1, 0));
-            var database = new MongoClient(CONNECTION_STRING).GetDatabase(DATABASE);
+            var database = new MongoClient(Const.TestDatabase.ConnectionString).GetDatabase(Const.TestDatabase.DatabaseName);
             
             var result = validator.Validate(migration
                 , true

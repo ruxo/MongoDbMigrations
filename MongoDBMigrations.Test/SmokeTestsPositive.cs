@@ -9,17 +9,13 @@ namespace MongoDBMigrations.Test
     [TestClass]
     public class SmokeTestsPositive
     {
-        private const string CONNECTION_STRING = "mongodb://localhost:27017";
-        private const string DATABASE = "test";
-
-
         [TestMethod]
         public void Database_Migrate_Simple_WithValidation_Success()
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE,
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName,
                 MigrationProjectLocation = DirectoryExtensions.GetCsprojWithTestsDirectoryFullPath(),
                 IsSchemeValidationActive = true
             };
@@ -39,8 +35,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE,
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName,
                 MigrationProjectLocation = DirectoryExtensions.GetCsprojWithTestsDirectoryFullPath(),
                 IsSchemeValidationActive = true
             };
@@ -62,8 +58,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);
@@ -81,8 +77,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);
@@ -100,8 +96,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);
@@ -115,8 +111,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);
@@ -131,8 +127,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);
@@ -144,8 +140,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
             var runner = new MigrationRunner(options);
             runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
