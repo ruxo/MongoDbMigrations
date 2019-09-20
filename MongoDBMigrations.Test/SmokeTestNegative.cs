@@ -6,17 +6,14 @@ namespace MongoDBMigrations.Test
     [TestClass]
     public class SmokeTestNegative
     {
-        private const string CONNECTION_STRING = "mongodb://localhost:27017";
-        private const string DATABASE = "test";
-
         [TestMethod]
         [ExpectedException(typeof(MigrationNotFoundException))]
-        public void Database_Migrate_To_Verstion_Without_Impl_Should_Throw_Exception()
+        public void Database_Migrate_To_Version_Without_Impl_Should_Throw_Exception()
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);

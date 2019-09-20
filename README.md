@@ -1,6 +1,6 @@
 # MongoDBMigrations
 
-[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.1-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
 
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database
@@ -28,11 +28,12 @@ We need migrations when:
 MongoDBMigrations tested with .NET Core 2.0+  
 https://www.nuget.org/packages/MongoDBMigrations/
 ```
-PM> Install-Package MongoDBMigrations -Version 1.1.0
+PM> Install-Package MongoDBMigrations -Version 1.1.1
 ```
 ### How to use
 Create a migration by impelmeting the interface `IMigration`. Best practice for the version is to use [Semantic Versioning](http://semver.org/) but ultimately it is up to you. You could simply use the patch version to count the number of migrations. If there is a duplicate for a specific type an exception is thrown on initialization.
 This is the simple migration template. Method `Up` used for migrate your database forward and `Down` to rollback thus these methods must do the opposite things. Please keep it in mind.
+
 ```csharp
 //Create migration
 public class MyTestMigration : IMigration
@@ -70,6 +71,16 @@ runner.UpdateTo(new Version(1,1,0));
 //Start migration to version 1.0.0 and getting result of each migration between current and target versions
 var result = runner.UpdateTo(new Version(1,0,0));
 ```
+
+
+**Please note:** min version of your migration must be **greater** than 1.0.0. If your migration version less than or equal `Version(1, 0, 0)` then Runner will thrown exception "Sequence contains no elements" with next stacktrace:
+```
+   at System.Linq.Enumerable.Last[TSource](IEnumerable`1 source)
+   at MongoDBMigrations.MigrationLocator.GetMigrations(Version currentVersion, Version targetVerstion)
+   at MongoDBMigrations.MigrationRunner.UpdateTo(Version targetVersion)
+   at MongoDBMigrations.MigrationRunner.UpdateToLatest()
+```
+
 
 You also can get progress of migration process, just subscribe to `MigrationApplied` event
 ```csharp

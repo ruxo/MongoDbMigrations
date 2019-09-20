@@ -10,16 +10,13 @@ namespace MongoDBMigrations.Test
     [TestClass]
     public class SmokeAsyncTestPositive
     {
-        private const string CONNECTION_STRING = "mongodb://localhost:27017";
-        private const string DATABASE = "test";
-
         [TestMethod]
         public void Database_Migrate_Async_Succeed_Without_Progress()
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);
@@ -35,10 +32,10 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE,
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName,
                 IsSchemeValidationActive = true,
-                MigrationProjectLocation = @"C:\Users\artur\source\repos\MongoDBMigrations\MongoDBMigrations.Test\MongoDBMigrations.Test.csproj"
+                MigrationProjectLocation = DirectoryExtensions.GetCsprojWithTestsDirectoryFullPath()
             };
 
             var runner = new MigrationRunner(options);
@@ -57,8 +54,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
 
             var runner = new MigrationRunner(options);
@@ -75,8 +72,8 @@ namespace MongoDBMigrations.Test
         {
             var options = new MigrationRunnerOptions
             {
-                ConnectionString = CONNECTION_STRING,
-                DatabaseName = DATABASE
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
             };
             var runner = new MigrationRunner(options);
             runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
