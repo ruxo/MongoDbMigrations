@@ -1,6 +1,6 @@
 # MongoDBMigrations
 
-[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.1-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
 
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database
@@ -28,7 +28,7 @@ We need migrations when:
 MongoDBMigrations tested with .NET Core 2.0+  
 https://www.nuget.org/packages/MongoDBMigrations/
 ```
-PM> Install-Package MongoDBMigrations -Version 1.1.0
+PM> Install-Package MongoDBMigrations -Version 1.1.1
 ```
 ### How to use
 Create a migration by impelmeting the interface `IMigration`. Best practice for the version is to use [Semantic Versioning](http://semver.org/) but ultimately it is up to you. You could simply use the patch version to count the number of migrations. If there is a duplicate for a specific type an exception is thrown on initialization.
