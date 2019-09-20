@@ -65,10 +65,16 @@ namespace MongoDBMigrations
         /// <returns>Database version in semantic view.</returns>
         public Version GetVersion()
         {
-            var lastMigrations = GetLastAppliedMigration();
-            return lastMigrations == null
-                ? new Version(1, 0, 0)
-                : lastMigrations.Ver;
+            var lastMigration = GetLastAppliedMigration();
+            if (lastMigration == null || lastMigration.isUp)
+                return lastMigration?.Ver ?? Version.Zero();
+
+            var migration = GetAppliedMigrations()
+                .Find(item => item.isUp && item.Ver < lastMigration.Ver)
+                .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
+                .FirstOrDefault();
+
+            return migration?.Ver ?? Version.Zero();
         }
 
         /// <summary>
@@ -77,10 +83,30 @@ namespace MongoDBMigrations
         /// <returns>Database version in semantic view.</returns>
         public async Task<Version> GetVersionAsync()
         {
-            var lastMigrations = await GetLastAppliedMigrationAsync().ConfigureAwait(false);
-            return await (lastMigrations == null
-                ? Task.FromResult(new Version(1, 0, 0))
-                : Task.FromResult(lastMigrations.Ver));
+            var lastMigration = await GetLastAppliedMigrationAsync().ConfigureAwait(false);
+
+            if (lastMigration == null || lastMigration.isUp)
+                return await (lastMigration == null
+                    ? Task.FromResult(Version.Zero())
+                    : Task.FromResult(lastMigration.Ver));
+
+            var migration = GetAppliedMigrations()
+                .Find(item => item.isUp && item.Ver < lastMigration.Ver)
+                .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
+                .FirstOrDefault();
+
+            return migration?.Ver ?? Version.Zero();
+        }
+
+        public Version GetPreviousVersion()
+        {
+            var currentVer = GetVersion();
+            var migrations = GetAppliedMigrations()
+                .Find(FilterDefinition<SpecificationItem>.Empty)
+                .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime)).ToList();
+
+            var migration = migrations.FirstOrDefault(x => x.Ver < currentVer);
+            return migration?.Ver ?? Version.Zero();
         }
 
         /// <summary>
@@ -117,19 +143,20 @@ namespace MongoDBMigrations
         /// <returns>Applied migration.</returns>
         public SpecificationItem SaveMigration(IMigration migration, bool isUp)
         {
+            /*
             var rollbackSpecification = _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME)
                 .Find(x => x.Ver < migration.Version)
                 .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
                 .FirstOrDefault();
 
-            var rollbackVersion = Version.V1();
+            var rollbackVersion = GetPreviousVersion();
             if (rollbackSpecification != null)
                 rollbackVersion = rollbackSpecification.Ver;
-
+                */
             var appliedMigration = new SpecificationItem
             {
                 Name = migration.Name,
-                Ver = isUp ? migration.Version : rollbackVersion,
+                Ver = migration.Version,
                 isUp = isUp,
                 ApplyingDateTime = DateTime.UtcNow
             };
@@ -145,21 +172,22 @@ namespace MongoDBMigrations
         /// <returns>Applied migration.</returns>
         public async Task<SpecificationItem> SaveMigrationAsync(IMigration migration, bool isUp)
         {
+            /*
             var rollbackSpecifications = await _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME)
                 .FindAsync(x => x.Ver < migration.Version, new FindOptions<SpecificationItem, SpecificationItem>
                 {
                     Sort = Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime)
                 }).ConfigureAwait(false);
 
-            var rollbackVersion = Version.V1();
+            var rollbackVersion = GetPreviousVersion();
             var specification = await rollbackSpecifications.FirstOrDefaultAsync().ConfigureAwait(false);
             if (specification != null)
                 rollbackVersion = specification.Ver;
-
+                */
             var appliedMigration = new SpecificationItem
             {
                 Name = migration.Name,
-                Ver = isUp ? migration.Version : rollbackVersion,
+                Ver = migration.Version,
                 isUp = isUp,
                 ApplyingDateTime = DateTime.UtcNow
             };

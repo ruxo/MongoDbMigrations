@@ -8,6 +8,7 @@ using System.Threading;
 namespace MongoDBMigrations.Test
 {
     [TestClass]
+    [DoNotParallelize]
     public class SmokeAsyncTestPositive
     {
         [TestMethod]
@@ -40,10 +41,7 @@ namespace MongoDBMigrations.Test
 
             var runner = new MigrationRunner(options);
             runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
-            var result = runner.UpdateToAsync(new Version(1, 1, 0), (validationResult) =>
-            {
-                return true;
-            }).Result;
+            var result = runner.UpdateToAsync(new Version(1, 1, 0), (validationResult) => true).Result;
             Debug.WriteLine(result.Message);
 
             Assert.AreEqual(new Version(1, 1, 0).ToString(), result.TargetVersion.ToString());
@@ -77,7 +75,7 @@ namespace MongoDBMigrations.Test
             };
             var runner = new MigrationRunner(options);
             runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
-            runner.UpdateTo(Version.V1());
+            runner.UpdateTo(Version.Zero());
         }
 
         private void ReportProgress(MigrationResult step)

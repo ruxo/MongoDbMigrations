@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Driver;
 using MongoDBMigrations.Core;
@@ -38,7 +37,7 @@ namespace MongoDBMigrations.Test
             var validator = new MongoSchemeValidator();
             var locator = new MigrationLocator();
             locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
-            var migration = locator.GetMigrations(Version.V1(), new Version(1, 1, 0));
+            var migration = locator.GetMigrations(Version.Zero(), new Version(1, 1, 0));
             var database = new MongoClient(Const.TestDatabase.ConnectionString).GetDatabase(Const.TestDatabase.DatabaseName);
             
             var result = validator.Validate(migration

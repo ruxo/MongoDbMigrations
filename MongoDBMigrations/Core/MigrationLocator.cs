@@ -123,7 +123,7 @@ namespace MongoDBMigrations
             else
                 return Enumerable.Empty<IMigration>();
 
-            if (targetVerstion != Version.V1() && migrations.Last().Version != targetVerstion)
+            if (!migrations.Any() || targetVerstion != Version.Zero() && migrations.Last().Version != targetVerstion)
                 throw new MigrationNotFoundException(_assembly.FullName, null);
 
             return migrations;
@@ -138,7 +138,7 @@ namespace MongoDBMigrations
             var migrations = GetAllMigrations();
             if (!migrations.Any())
             {
-                return new Version(1, 0, 0);
+                return Version.Zero();
             }
 
             return migrations.Max(m => m.Version);

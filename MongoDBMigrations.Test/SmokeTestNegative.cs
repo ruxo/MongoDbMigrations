@@ -4,6 +4,7 @@ using MongoDBMigrations.Core;
 namespace MongoDBMigrations.Test
 {
     [TestClass]
+    [DoNotParallelize]
     public class SmokeTestNegative
     {
         [TestMethod]

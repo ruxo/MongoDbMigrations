@@ -7,6 +7,7 @@ using MongoDBMigrations.Core;
 namespace MongoDBMigrations.Test
 {
     [TestClass]
+    [DoNotParallelize]
     public class SmokeTestsPositive
     {
         [TestMethod]
@@ -101,7 +102,8 @@ namespace MongoDBMigrations.Test
             };
 
             var runner = new MigrationRunner(options);
-            var result = runner.Status.IsNotLatestVersion(Version.V1());
+            runner.UpdateTo(Version.Zero());
+            var result = runner.Status.IsNotLatestVersion(Version.Zero());
 
             Assert.IsFalse(result);
         }
@@ -145,7 +147,7 @@ namespace MongoDBMigrations.Test
             };
             var runner = new MigrationRunner(options);
             runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
-            runner.UpdateTo(Version.V1());
+            runner.UpdateTo(Version.Zero());
         }
 
         private void PositiveConfirmResult(object sender, ConfirmationEventArgs eventArgs)
