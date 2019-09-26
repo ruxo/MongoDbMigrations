@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDBMigrations.Core;
 
@@ -29,6 +27,28 @@ namespace MongoDBMigrations.Test
             runner.MigrationApplied -= Handle;
 
             Assert.AreEqual(new Version(1, 1, 0).ToString(), result.TargetVersion.ToString());
+        }
+
+        [TestMethod]
+        public void UpdateTo_TryDownVersionWithMultipleMigrationsButWithoutSchemaValidation_LatestVersionWasIncreased()
+        {
+            var options = new MigrationRunnerOptions
+            {
+                ConnectionString = Const.TestDatabase.ConnectionString,
+                DatabaseName = Const.TestDatabase.DatabaseName
+            };
+
+            var runner = new MigrationRunner(options);
+            runner.Locator.LookInAssemblyOfType<_1_1_0_TestMigration>();
+            var ver090 = new Version(0,9,0);
+            var ver110 = new Version(1,1,0);
+            runner.UpdateToLatest();
+            var expectedVersion = runner.Status.GetVersion();
+
+            Assert.AreEqual(ver110, expectedVersion);
+            runner.UpdateTo(ver090);
+            expectedVersion = runner.Status.GetVersion();
+            Assert.AreEqual(ver090, expectedVersion);
         }
 
         [TestMethod]
