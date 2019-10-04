@@ -1,5 +1,10 @@
 # MongoDBMigrations
 
+### v1.1.2
+  - Ignore migration attribute
+  - Supporting migrations with version less then 1.0.0
+  - Fixed critical bugs
+
 ### v1.1.1
   - Change target framework from netcoreapp2.1 to netstandard2.0
 
