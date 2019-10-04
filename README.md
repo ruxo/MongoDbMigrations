@@ -1,6 +1,6 @@
 # MongoDBMigrations
 
-[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.1-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.2-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
 
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database
