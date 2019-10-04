@@ -193,8 +193,15 @@ namespace MongoDBMigrations
             }
 
             var totalCount = migrations.Length;
+            var appliedMigrations = Status.GetAppliedMigrations().Find(FilterDefinition<SpecificationItem>.Empty)
+                .ToList().Where(x => x.isUp).Distinct().Select(x => x.Ver);
             for (int i = 0; i < totalCount; i++)
             {
+                if(!isUp && !appliedMigrations.Contains(migrations[i].Version))
+                {
+                    throw new BrokenMigrationSequence();
+                }
+
                 if (isUp)
                     migrations[i].Up(Database);
                 else
