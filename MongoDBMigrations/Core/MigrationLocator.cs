@@ -10,7 +10,7 @@ namespace MongoDBMigrations
     /// <summary>
     /// Works with local migrations
     /// </summary>
-    public class MigrationLocator
+    internal class MigrationLocator
     {
         private Assembly _assembly;
 
@@ -18,8 +18,15 @@ namespace MongoDBMigrations
         {
         }
 
-        public MigrationLocator(Assembly assembly)
+        /// <summary>
+        /// Sets assembly
+        /// </summary>
+        /// <param name="assembly">Assembly where migration classes located</param>
+        public void SetAssembly(Assembly assembly)
         {
+            if (assembly == null)
+                throw new ArgumentNullException(nameof(assembly));
+
             _assembly = assembly;
         }
 
@@ -49,24 +56,25 @@ namespace MongoDBMigrations
         /// <returns>List of all found migrations.</returns>
         public List<IMigration> GetAllMigrations()
         {
-            if (_assembly == null)
+            if (_assembly != null)
             {
-                var stackFrames = new StackTrace().GetFrames();
-                if (stackFrames == null)
-                    throw new InvalidOperationException("Can't find assembly with migrations. Try use LookInAssemblyOfType() method before.");
+                return GetAllMigrations(_assembly);
+            }
 
-                var currentAssembly = Assembly.GetExecutingAssembly();
-                Assembly trueCallingAssembly = stackFrames
-                    .FirstOrDefault(a => a.GetMethod().DeclaringType.Assembly != currentAssembly).GetMethod().DeclaringType.Assembly;
+            // Ok no problem let's try to find mingrations in excecuting assembly
+            var stackFrames = new StackTrace().GetFrames();
+            if (stackFrames == null)
+                throw new InvalidOperationException("Can't find assembly with migrations. Try use LookInAssemblyOfType() method before.");
 
-                if(trueCallingAssembly == null)
-                    throw new InvalidOperationException("Can't find assembly with migrations. Try use LookInAssemblyOfType() method before.");
+            var currentAssembly = Assembly.GetExecutingAssembly();
+            Assembly trueCallingAssembly = stackFrames
+                .FirstOrDefault(a => a.GetMethod().DeclaringType.Assembly != currentAssembly).GetMethod().DeclaringType.Assembly;
+
+            if (trueCallingAssembly == null)
+                throw new InvalidOperationException("Can't find assembly with migrations. Try use LookInAssemblyOfType() method before.");
 
 
-                return GetAllMigrations(trueCallingAssembly);
-            }    
-
-            return GetAllMigrations(_assembly);
+            return GetAllMigrations(trueCallingAssembly);
         }
 
         /// <summary>
@@ -90,7 +98,7 @@ namespace MongoDBMigrations
             }
             catch (Exception exception)
             {
-                throw new MigrationNotFoundException(assembly.FullName, exception);
+                throw new InvalidOperationException($"Can't find migrations in assembly {assembly.FullName}", exception);
             }
 
             if (!result.Any())
@@ -128,7 +136,7 @@ namespace MongoDBMigrations
             }
             else
                 return Enumerable.Empty<IMigration>().ToList();
-            
+
             if (!migrations.Any())
                 throw new MigrationNotFoundException(_assembly.FullName, null);
 

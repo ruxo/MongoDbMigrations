@@ -16,11 +16,7 @@ namespace MongoDBMigrations.Core
     public class MongoSchemeValidator
     {
 
-        /// <summary>
-        /// List of method names in which the collection name is used. 
-        /// They were taken from the IMongoDatabase interface.
-        /// </summary>
-        public List<string> MethodMarkers { get; } = new List<string>
+        private List<string> _methodMarkers = new List<string>
         {
             "GetCollection",
             "CreateCollection",
@@ -28,6 +24,18 @@ namespace MongoDBMigrations.Core
             "DropCollection",
             "DropCollectionAsync"
         };
+
+        /// <summary>
+        /// List of method names in which the collection name is used. 
+        /// They were taken from the IMongoDatabase interface.
+        /// </summary>
+        public List<string> MethodMarkers
+        {
+            get
+            {
+                return _methodMarkers;
+            }
+        }
 
         /// <summary>
         /// Add new method name to MethodMarkers collection, it will be added if it not exist.
@@ -40,7 +48,7 @@ namespace MongoDBMigrations.Core
                 return;
             }
 
-            MethodMarkers.Add(methodName);
+            _methodMarkers.Add(methodName);
         }
 
         /// <summary>
@@ -80,7 +88,7 @@ namespace MongoDBMigrations.Core
             {
                 var tree = file.GetSyntaxTreeAsync().Result;
                 var methods = finder.FindMethods(tree.GetRoot());
-                if(methods.Any())
+                if (methods.Any())
                 {
                     var model = compilation.GetSemanticModel(tree);
                     collectionNames.AddRange(methods.SelectMany(item => FindCollectionNames(model, item)));
