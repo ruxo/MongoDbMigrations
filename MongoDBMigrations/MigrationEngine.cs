@@ -6,6 +6,7 @@ using MongoDBMigrations.Core;
 using System.Reflection;
 using System.Threading;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MongoDBMigrations
 {
@@ -47,7 +48,7 @@ namespace MongoDBMigrations
             return this;
         }
 
-        public MigrationResult Run(Version version)
+        private MigrationResult RunInternal(Version version)
         {
             var currentDatabaseVersion = _status.GetVersion();
             var migrations = _locator.GetMigrations(currentDatabaseVersion, version);
@@ -64,12 +65,17 @@ namespace MongoDBMigrations
                 return result;
             }
 
+            if (_token.IsCancellationRequested)
+            {
+                _token.ThrowIfCancellationRequested();
+            }
+
             var isUp = version > currentDatabaseVersion;
 
             if (_schemeValidationNeeded)
             {
                 var validator = new MongoSchemeValidator();
-                var validationResult = validator.Validate(migrations, isUp, _migrationProjectLocation, _database); //Refactor direction and user path to project instead of null
+                var validationResult = validator.Validate(migrations, isUp, _migrationProjectLocation, _database);
                 if (validationResult.FailedCollections.Any())
                 {
                     var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
@@ -81,7 +87,9 @@ namespace MongoDBMigrations
             foreach (var m in migrations)
             {
                 if (_token.IsCancellationRequested)
-                    break;
+                {
+                    _token.ThrowIfCancellationRequested();
+                }
 
                 counter++;
                 var increment = new InterimMigrationResult();
@@ -125,6 +133,18 @@ namespace MongoDBMigrations
             }
 
             return result;
+        }
+
+        public MigrationResult Run(Version version)
+        {
+            if(_token == null || !_token.CanBeCanceled)
+            {
+                return RunInternal(version);
+            }
+            else
+            {
+                return Task.Factory.StartNew(() => RunInternal(version), _token).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
         }
 
         public MigrationResult Run()
@@ -185,7 +205,8 @@ namespace MongoDBMigrations
                 .UseAssemblyOfType(typeof(VerstionSerializer))
                 .UseSchemeValidation(false)
                 .UseProgressHandler(Log)
-                .UseCancelationToken(CancellationToken.None)
+                .UseProgressHandler(x => Console.WriteLine(x.MigrationName))
+                //.UseCancelationToken(CancellationToken.None)
                 .Run();
 
         }
