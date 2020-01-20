@@ -45,6 +45,7 @@ namespace MongoDBMigrations
                 this._progressHandlers = new List<Action<InterimMigrationResult>>();
 
             this._progressHandlers.Add(action);
+
             return this;
         }
 
@@ -56,7 +57,8 @@ namespace MongoDBMigrations
             var result = new MigrationResult
             {
                 ServerAdress = string.Join(",", _database.Client.Settings.Servers),
-                DatabaseName = _database.DatabaseNamespace.DatabaseName
+                DatabaseName = _database.DatabaseNamespace.DatabaseName,
+                InterimSteps = new List<InterimMigrationResult>()
             };
 
             if (!migrations.Any())
@@ -99,11 +101,12 @@ namespace MongoDBMigrations
                     {
                         session.StartTransaction();
                         if (isUp)
-                            m.Up(_database);
+                            m.Up(session, _database);
                         else
-                            m.Down(_database);
+                            m.Down(session, _database);
 
-                        var insertedMigration = _status.SaveMigration(m, isUp);
+                        var insertedMigration = _status.SaveMigration(session, m, isUp);
+                        session.CommitTransaction();
 
                         increment.MigrationName = insertedMigration.Name;
                         increment.TargetVersion = insertedMigration.Ver;
@@ -120,8 +123,7 @@ namespace MongoDBMigrations
                     }
                     finally
                     {
-                        session.CommitTransaction();
-                        if (_progressHandlers.Any())
+                        if (_progressHandlers != null && _progressHandlers.Any())
                         {
                             foreach (var action in _progressHandlers)
                             {
@@ -137,6 +139,11 @@ namespace MongoDBMigrations
 
         public MigrationResult Run(Version version)
         {
+            if(object.ReferenceEquals(version, null))
+            {
+                version = this._locator.GetNewestLocalVersion();
+            }
+
             if(_token == null || !_token.CanBeCanceled)
             {
                 return RunInternal(version);
@@ -194,26 +201,6 @@ namespace MongoDBMigrations
                 this._migrationProjectLocation = _migrationProjectLocation;
             }
             return this;
-        }
-    }
-
-    public class Temp
-    {
-        public void Foo()
-        {
-            var foo = MigrationEngine.UseDatabase("connection", "name")
-                .UseAssemblyOfType(typeof(VerstionSerializer))
-                .UseSchemeValidation(false)
-                .UseProgressHandler(Log)
-                .UseProgressHandler(x => Console.WriteLine(x.MigrationName))
-                //.UseCancelationToken(CancellationToken.None)
-                .Run();
-
-        }
-
-        public void Log(InterimMigrationResult step)
-        {
-
         }
     }
 }

@@ -9,9 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDBMigrations.Test", "M
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{D1E3EAAA-6BB4-486E-A8C5-4C1E0CAE72FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDBMigrations.UnitTests", "MongoDBMigrations.UnitTests\MongoDBMigrations.UnitTests.csproj", "{27B6D474-C206-4E2C-BEBD-EAEE38FC7D07}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDBMigrations.UnitTests", "MongoDBMigrations.UnitTests\MongoDBMigrations.UnitTests.csproj", "{27B6D474-C206-4E2C-BEBD-EAEE38FC7D07}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDBMigrations.SmokeTests", "MongoDBMigrations.SmokeTests\MongoDBMigrations.SmokeTests.csproj", "{D6D945B1-F9E1-494F-BCFF-BA84BA42C42D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDBMigrations.SmokeTests", "MongoDBMigrations.SmokeTests\MongoDBMigrations.SmokeTests.csproj", "{D6D945B1-F9E1-494F-BCFF-BA84BA42C42D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

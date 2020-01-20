@@ -16,7 +16,11 @@ namespace MongoDBMigrations.Core
     public class MongoSchemeValidator
     {
 
-        private List<string> _methodMarkers = new List<string>
+        /// <summary>
+        /// List of method names in which the collection name is used. 
+        /// They were taken from the IMongoDatabase interface.
+        /// </summary>
+        public List<string> MethodMarkers { get; } = new List<string>
         {
             "GetCollection",
             "CreateCollection",
@@ -24,18 +28,6 @@ namespace MongoDBMigrations.Core
             "DropCollection",
             "DropCollectionAsync"
         };
-
-        /// <summary>
-        /// List of method names in which the collection name is used. 
-        /// They were taken from the IMongoDatabase interface.
-        /// </summary>
-        public List<string> MethodMarkers
-        {
-            get
-            {
-                return _methodMarkers;
-            }
-        }
 
         /// <summary>
         /// Add new method name to MethodMarkers collection, it will be added if it not exist.
@@ -48,7 +40,7 @@ namespace MongoDBMigrations.Core
                 return;
             }
 
-            _methodMarkers.Add(methodName);
+            MethodMarkers.Add(methodName);
         }
 
         /// <summary>

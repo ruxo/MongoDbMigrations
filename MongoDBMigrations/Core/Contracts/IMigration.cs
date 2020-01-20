@@ -1,5 +1,3 @@
-using System;
-using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace MongoDBMigrations
@@ -20,12 +18,12 @@ namespace MongoDBMigrations
         /// Roll forward method.
         /// </summary>
         /// <param name="database">Instance of MongoDatabase</param>
-        void Up(IMongoDatabase database);
+        void Up(IClientSessionHandle session, IMongoDatabase database);
 
         /// <summary>
         /// Roll back method.
         /// </summary>
         /// <param name="database">Instance of MongoDatabase</param>
-        void Down(IMongoDatabase database);
+        void Down(IClientSessionHandle session, IMongoDatabase database);
     }
 }
