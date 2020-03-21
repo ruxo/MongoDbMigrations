@@ -2,7 +2,6 @@
 
 ### v2.0.0
   - Added: Totaly brand new fluent API
-  - Added: All migrations supports rollbach in case of failure
   - Added: Callback for steps
   - Added: On-flight cancelation
   - Added: PowerShell script that can be integrated in CI/CD flow to make migration

@@ -85,57 +85,51 @@ namespace MongoDBMigrations
                 }
             }
 
-            //var opsManager = new OperationsLogManager();
-
             int counter = 0;
 
-            //using (var session = opsManager.StartSession(_database))
-                foreach (var m in migrations)
+            foreach (var m in migrations)
+            {
+                if (_token.IsCancellationRequested)
                 {
-                    if (_token.IsCancellationRequested)
-                    {
-                        _token.ThrowIfCancellationRequested();
-                    }
-
-                    counter++;
-                    var increment = new InterimMigrationResult();
-
-                    try
-                    {
-                        //session.StartOpsRecording(counter);
-                        if (isUp)
-                            m.Up(_database);
-                        else
-                            m.Down(_database);
-
-                        var insertedMigration = _status.SaveMigration(m, isUp);
-                        //session.StopOpsRecording();
-
-                        increment.MigrationName = insertedMigration.Name;
-                        increment.TargetVersion = insertedMigration.Ver;
-                        increment.ServerAdress = result.ServerAdress;
-                        increment.DatabaseName = result.DatabaseName;
-                        increment.CurrentNumber = counter;
-                        increment.TotalCount = migrations.Count;
-                        result.InterimSteps.Add(increment);
-                    }
-                    catch (Exception ex)
-                    {
-                        //session.RevertOps();
-                        throw new InvalidOperationException("Something went wrong during migration", ex);
-                    }
-                    finally
-                    {
-                        if (_progressHandlers != null && _progressHandlers.Any())
-                        {
-                            foreach (var action in _progressHandlers)
-                            {
-                                action(increment);
-                            }
-                        }
-                        result.CurrentVersion = _status.GetVersion();
-                    }
+                    _token.ThrowIfCancellationRequested();
                 }
+
+                counter++;
+                var increment = new InterimMigrationResult();
+
+                try
+                {
+                    if (isUp)
+                        m.Up(_database);
+                    else
+                        m.Down(_database);
+
+                    var insertedMigration = _status.SaveMigration(m, isUp);
+
+                    increment.MigrationName = insertedMigration.Name;
+                    increment.TargetVersion = insertedMigration.Ver;
+                    increment.ServerAdress = result.ServerAdress;
+                    increment.DatabaseName = result.DatabaseName;
+                    increment.CurrentNumber = counter;
+                    increment.TotalCount = migrations.Count;
+                    result.InterimSteps.Add(increment);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("Something went wrong during migration", ex);
+                }
+                finally
+                {
+                    if (_progressHandlers != null && _progressHandlers.Any())
+                    {
+                        foreach (var action in _progressHandlers)
+                        {
+                            action(increment);
+                        }
+                    }
+                    result.CurrentVersion = _status.GetVersion();
+                }
+            }
 
             return result;
         }
