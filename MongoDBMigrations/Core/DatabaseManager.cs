@@ -8,12 +8,12 @@ namespace MongoDBMigrations
     /// <summary>
     /// Works with applied migrations
     /// </summary>
-    public class DatabaseStatus
+    public class DatabaseManager
     {
         private const string SPECIFICATION_COLLECTION_NAME = "_migrations";
         private readonly IMongoDatabase _database;
 
-        public DatabaseStatus(IMongoDatabase database)
+        public DatabaseManager(IMongoDatabase database)
         {
             _database = database ?? throw new TypeInitializationException("Database can't be null", null);
 
@@ -22,7 +22,6 @@ namespace MongoDBMigrations
                 _database.CreateCollection(SPECIFICATION_COLLECTION_NAME);
             }
         }
-
         private IMongoCollection<SpecificationItem> GetAppliedMigrations()
         {
             return _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME);
@@ -69,7 +68,7 @@ namespace MongoDBMigrations
         /// <param name="migration">Migration instance.</param>
         /// <param name="isUp">True if roll forward otherwise roll back.</param>
         /// <returns>Applied migration.</returns>
-        internal SpecificationItem SaveMigration(IClientSessionHandle session, IMigration migration, bool isUp)
+        internal SpecificationItem SaveMigration(IMigration migration, bool isUp)
         {
             var appliedMigration = new SpecificationItem
             {
@@ -78,7 +77,7 @@ namespace MongoDBMigrations
                 isUp = isUp,
                 ApplyingDateTime = DateTime.UtcNow
             };
-            GetAppliedMigrations().InsertOne(session, appliedMigration);
+            GetAppliedMigrations().InsertOne(appliedMigration);
             return appliedMigration;
         }
     }

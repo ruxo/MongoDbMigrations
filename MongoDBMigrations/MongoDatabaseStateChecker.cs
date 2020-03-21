@@ -19,9 +19,9 @@ namespace MongoDBMigrations
 
         private static (Version dbVersion, Version availableVersion) GetCurrentVersions(string connectionString, string databaseName)
         {
-            var locator = new MigrationLocator();
+            var locator = new MigrationManager();
             var highestAvailableVersion = locator.GetNewestLocalVersion();
-            var dbStatus = new DatabaseStatus(new MongoClient(connectionString).GetDatabase(databaseName));
+            var dbStatus = new DatabaseManager(new MongoClient(connectionString).GetDatabase(databaseName));
             var currectDbVersion = dbStatus.GetVersion();
             return (currectDbVersion, highestAvailableVersion);
         }

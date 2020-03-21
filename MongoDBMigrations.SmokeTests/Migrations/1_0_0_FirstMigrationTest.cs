@@ -9,17 +9,17 @@ namespace MongoDBMigrations.SmokeTests.Migrations
 
         public string Name => "Changing column name";
 
-        public void Down(IClientSessionHandle session, IMongoDatabase database)
+        public void Down(IMongoDatabase database)
         {
             var collection = database.GetCollection<BsonDocument>("user");
-            collection.UpdateMany(session, FilterDefinition<BsonDocument>.Empty,
+            collection.UpdateMany(FilterDefinition<BsonDocument>.Empty,
                 Builders<BsonDocument>.Update.Rename("firstName", "name"));
         }
 
-        public void Up(IClientSessionHandle session, IMongoDatabase database)
+        public void Up(IMongoDatabase database)
         {
             var collection = database.GetCollection<BsonDocument>("user");
-            collection.UpdateMany(session, FilterDefinition<BsonDocument>.Empty,
+            collection.UpdateMany(FilterDefinition<BsonDocument>.Empty,
                 Builders<BsonDocument>.Update.Rename("name", "firstName"));
         }
     }

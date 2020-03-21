@@ -9,26 +9,26 @@ namespace MongoDBMigrations.SmokeTests.Migrations
 
         public string Name => "Changing type of age type";
 
-        public void Down(IClientSessionHandle session, IMongoDatabase database)
+        public void Down(IMongoDatabase database)
         {
             var collection = database.GetCollection<BsonDocument>("user");
             var list = collection.Find(FilterDefinition<BsonDocument>.Empty).ToList();
             FieldDefinition<BsonDocument, int> fieldDefenition = "users.age";
             foreach (var item in list)
             {
-                collection.UpdateOne(session, new BsonDocument("_id", item["_id"]),
+                collection.UpdateOne(new BsonDocument("_id", item["_id"]),
                     Builders<BsonDocument>.Update.Set(fieldDefenition, item["age"].ToInt32()));
             }
         }
 
-        public void Up(IClientSessionHandle session, IMongoDatabase database)
+        public void Up(IMongoDatabase database)
         {
             var collection = database.GetCollection<BsonDocument>("user");
             var list = collection.Find(FilterDefinition<BsonDocument>.Empty).ToList();
             FieldDefinition<BsonDocument, string> fieldDefenition = "users.age";
             foreach (var item in list)
             {
-                collection.UpdateOne(session, new BsonDocument("_id", item["_id"]),
+                collection.UpdateOne(new BsonDocument("_id", item["_id"]),
                     Builders<BsonDocument>.Update.Set(fieldDefenition, item["age"].ToString()));
             }
         }

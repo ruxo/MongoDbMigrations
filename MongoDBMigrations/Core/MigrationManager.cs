@@ -10,11 +10,11 @@ namespace MongoDBMigrations
     /// <summary>
     /// Works with local migrations
     /// </summary>
-    internal class MigrationLocator
+    internal class MigrationManager
     {
         private Assembly _assembly;
 
-        public MigrationLocator()
+        public MigrationManager()
         {
         }
 

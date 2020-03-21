@@ -1,0 +1,8 @@
+{
+  "mongoFolder": "C:\\\\Program Files\\MongoDB\\Server\\4.2\\bin\\",
+  "dbFolder": "C:\\\\data\\db\\",
+  "connectionString": "mongodb://localhost:27017",
+  "databaseName": "test",
+  "host": "localhost",
+  "port": "27017"
+}

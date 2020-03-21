@@ -13,8 +13,8 @@ namespace MongoDBMigrations
     public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner
     {
         private IMongoDatabase _database;
-        private MigrationLocator _locator;
-        private DatabaseStatus _status;
+        private MigrationManager _locator;
+        private DatabaseManager _status;
         private bool _schemeValidationNeeded;
         private string _migrationProjectLocation;
         private CancellationToken _token;
@@ -25,14 +25,14 @@ namespace MongoDBMigrations
             BsonSerializer.RegisterSerializer(typeof(Version), new VerstionSerializer());
         }
 
-        public static ILocator UseDatabase(string connectionString, string databaseName)
+        public ILocator UseDatabase(string connectionString, string databaseName)
         {
             var database = new MongoClient(connectionString).GetDatabase(databaseName);
             return new MigrationEngine
             {
                 _database = database,
-                _locator = new MigrationLocator(),
-                _status = new DatabaseStatus(database)
+                _locator = new MigrationManager(),
+                _status = new DatabaseManager(database)
             };
         }
 
@@ -85,28 +85,31 @@ namespace MongoDBMigrations
                 }
             }
 
-            int counter = 0;
-            foreach (var m in migrations)
-            {
-                if (_token.IsCancellationRequested)
-                {
-                    _token.ThrowIfCancellationRequested();
-                }
+            //var opsManager = new OperationsLogManager();
 
-                counter++;
-                var increment = new InterimMigrationResult();
-                using (var session = _database.Client.StartSession())
+            int counter = 0;
+
+            //using (var session = opsManager.StartSession(_database))
+                foreach (var m in migrations)
                 {
+                    if (_token.IsCancellationRequested)
+                    {
+                        _token.ThrowIfCancellationRequested();
+                    }
+
+                    counter++;
+                    var increment = new InterimMigrationResult();
+
                     try
                     {
-                        session.StartTransaction();
+                        //session.StartOpsRecording(counter);
                         if (isUp)
-                            m.Up(session, _database);
+                            m.Up(_database);
                         else
-                            m.Down(session, _database);
+                            m.Down(_database);
 
-                        var insertedMigration = _status.SaveMigration(session, m, isUp);
-                        session.CommitTransaction();
+                        var insertedMigration = _status.SaveMigration(m, isUp);
+                        //session.StopOpsRecording();
 
                         increment.MigrationName = insertedMigration.Name;
                         increment.TargetVersion = insertedMigration.Ver;
@@ -118,7 +121,7 @@ namespace MongoDBMigrations
                     }
                     catch (Exception ex)
                     {
-                        session.AbortTransaction();
+                        //session.RevertOps();
                         throw new InvalidOperationException("Something went wrong during migration", ex);
                     }
                     finally
@@ -130,27 +133,28 @@ namespace MongoDBMigrations
                                 action(increment);
                             }
                         }
+                        result.CurrentVersion = _status.GetVersion();
                     }
                 }
-            }
 
             return result;
         }
 
         public MigrationResult Run(Version version)
         {
-            if(object.ReferenceEquals(version, null))
+            if (object.ReferenceEquals(version, null))
             {
                 version = this._locator.GetNewestLocalVersion();
             }
 
-            if(_token == null || !_token.CanBeCanceled)
+            if (_token == null || !_token.CanBeCanceled)
             {
                 return RunInternal(version);
             }
             else
             {
-                return Task.Factory.StartNew(() => RunInternal(version), _token).ConfigureAwait(false).GetAwaiter().GetResult();
+                return Task.Factory.StartNew(() => RunInternal(version), _token).ConfigureAwait(false).GetAwaiter()
+                    .GetResult();
             }
         }
 
@@ -193,12 +197,12 @@ namespace MongoDBMigrations
             return this;
         }
 
-        public IMigrationRunner UseSchemeValidation(bool enabled, string _migrationProjectLocation)
+        public IMigrationRunner UseSchemeValidation(bool enabled, string location)
         {
             this._schemeValidationNeeded = enabled;
-            if(enabled)
+            if (enabled)
             {
-                this._migrationProjectLocation = _migrationProjectLocation;
+                this._migrationProjectLocation = location;
             }
             return this;
         }

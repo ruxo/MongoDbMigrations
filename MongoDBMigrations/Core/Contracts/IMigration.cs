@@ -18,12 +18,12 @@ namespace MongoDBMigrations
         /// Roll forward method.
         /// </summary>
         /// <param name="database">Instance of MongoDatabase</param>
-        void Up(IClientSessionHandle session, IMongoDatabase database);
+        void Up(IMongoDatabase database);
 
         /// <summary>
         /// Roll back method.
         /// </summary>
         /// <param name="database">Instance of MongoDatabase</param>
-        void Down(IClientSessionHandle session, IMongoDatabase database);
+        void Down(IMongoDatabase database);
     }
 }
