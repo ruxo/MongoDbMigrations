@@ -68,11 +68,11 @@ new MigrationEngine().UseDatabase(connectionString, databaseName) //Required to 
 
 If you not test your migration yet, mark it by `IgnoreMigration` attribute, and runner will skip it.
 
-You can't check if database is outdated.
-```csharp
-var dbChecker = new DatabaseManager(database); //database is a IMongoDatabase instance
-var isOutdated = dbChecker.IsNotLatestVersion(newestVersion) //newestVersion is a newest available migration.
-```
+You can't check if database is outdated by dint of static class `MongoDatabaseStateChecker`
+|Method|Description|
+|-|-|
+|`ThrowIfDatabaseOutdated(connectionString,databaseName)`|Check is DB outdated and throw `DatabaseOutdatedExcetion` if yes|
+|`IsDatabaseOutdated((connectionString,databaseName)`|Returns `true` if DB outdated (you have unapplied migrations) otherwise `false`|
 ### CI/CD
 Now you have a chance to integrate mongo database migration engine in your CI pipeline. In repository you can found `MongoDBRunMigration.ps1` script. This approach allows you to have some backup rollback in case of any failure during migration.
 |Parameter|Description|

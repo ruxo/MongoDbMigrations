@@ -5,7 +5,7 @@ namespace MongoDBMigrations
     public class MigrationNotFoundException : Exception
     {
         public MigrationNotFoundException(string assemblyName, Exception innerException)
-            : base(string.Format("Migrations not found in assambly {0}", assemblyName), innerException)
+            : base(string.Format("Migrations are not found in assembly {0}", assemblyName), innerException)
         {}
     }
 }
