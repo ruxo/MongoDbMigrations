@@ -13,11 +13,6 @@ namespace MongoDBMigrations
         public readonly int Minor;
         public readonly int Revision;
 
-        [Obsolete("This method is obsolete and will be remove in next releases. Please use Version.Zero() instead of this one.")]
-        public static Version V1()
-        {
-            return Version.Zero();
-        }
 
         public static Version Zero()
         {

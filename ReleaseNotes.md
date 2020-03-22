@@ -1,12 +1,29 @@
 # MongoDBMigrations
 
+### v2.0.0
+  - Added: Totaly brand new fluent API
+  - Added: Callback for steps
+  - Added: On-flight cancelation
+  - Added: PowerShell script that can be integrated in CI/CD flow to make migration
+  - Removed: All obsolete APIs
+  - Removed: Async version of methods
+  - Removed: Confiramtion event in case of failed database scheeme validation (Now if validations failed migration process will be stoped)
+  - Fixed: Some amount of bugs
+  - Fixed: All test has been refactored to increase quality of library.
+
+***
+
 ### v1.1.2
-  - Ignore migration attribute
-  - Supporting migrations with version less then 1.0.0
-  - Fixed critical bugs
+  - Added: Ignore migration attribute
+  - Fixed: Supporting migrations with version less then 1.0.0
+  - Fixed: Critical bugs
+
+***
 
 ### v1.1.1
   - Change target framework from netcoreapp2.1 to netstandard2.0
+
+***
 
 ### v1.1.0
   - Added: MongoDB document schema uniformity validation

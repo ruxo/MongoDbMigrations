@@ -1,6 +1,6 @@
 # MongoDBMigrations
 
-[![NuGet](https://img.shields.io/badge/nuget%20package-v1.1.2-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+[![NuGet](https://img.shields.io/badge/nuget%20package-v2.0.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
 
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database
@@ -15,21 +15,23 @@ We need migrations when:
   
 
 ### New Features!
-  - Added: Ignore migration attribute
-  - Added: Supporting migration versions less then 1.0
-  - Changed: Fixed some critical bugs in database version rolling down
+  - Added: Fluent API
+  - Added: Cancelation feature
+  - Added: Callback feature
+  - Added: CI/CD integration
+  - Changed: Whole arhitecture
   - [See more...](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/ReleaseNotes.md)
 
 ### Next Feature/Todo
   - Diff calculation
   - Auto generated migrations
-  - Migration as part of CI
+  - Migrations inside transaction
 
 ### Installation
 MongoDBMigrations tested with .NET Core 2.0+  
 https://www.nuget.org/packages/MongoDBMigrations/
 ```
-PM> Install-Package MongoDBMigrations -Version 1.1.1
+PM> Install-Package MongoDBMigrations -Version 2.0.0
 ```
 ### How to use
 Create a migration by impelmeting the interface `IMigration`. Best practice for the version is to use [Semantic Versioning](http://semver.org/) but ultimately it is up to you. You could simply use the patch version to count the number of migrations. If there is a duplicate for a specific type an exception is thrown on initialization.
@@ -53,55 +55,32 @@ public class MyTestMigration : IMigration
 }
 ```
   
-Use next code for initialize `MigrationRunner` and start migration.
+Use next code for initialize `MigrationEngine` and start migration.
 ```csharp
-var options = new MigrationRunnerOptions
-{
-    ConnectionString = CONNECTION_STRING,
-    DatabaseName = DATABASE,
-    IsSchemeValidationActive = true, // Use true for engage schema validation, otherwise false
-    MigrationProjectLocation = @"<some_path_here>" //also needs for schema validation, it's absolute path for *.csproj file with migration classes
-};
-//Create instance of runner
-var runner = new MigrationRunner(options);
-//Find and set assembly with our migrations. If you don't call this method, runner try to find migrations in assembly from which the call is made
-runner.Locator.LookInAssemblyOfType<MyTestMigration>();
-//Start migration to version 1.1.0 when you don't need result
-runner.UpdateTo(new Version(1,1,0));
-
-//Start migration to version 1.0.0 and getting result of each migration between current and target versions
-var result = runner.UpdateTo(new Version(1,0,0));
-```
-
-You also can get progress of migration process, just subscribe to `MigrationApplied` event
-```csharp
-runner.MigrationApplied += Handle;
-var result = runner.UpdateTo(new Version(1, 1, 0));
-runner.MigrationApplied -= Handle;
-```
-where `Handle` is:
-```csharp
-private void Handle(object sender, MigrationResult result)
-{
-    //Result handling
-    Debug.WriteLine(result.Message);
-}
-```
-If you wanna use database document schema validation, please subscribe on event `Confirm` in runner. Inside of handler you can display some message and ask confirmation in following way:
-```csharp
-private void ConfirmHandler(object sender, ConfirmationEventArgs eventArgs)
-{
-    Console.WriteLine("Documents in db are inconsistent.");
-    // Some code for handling confirmation
-    eventArgs.Continue = true; //True if you still want to continue (it can brake you data), otherwise false. 
-}
+new MigrationEngine().UseDatabase(connectionString, databaseName) //Required to use specific db
+    .UseAssembly(assemblyWithMigrations) //Required
+    .UseSchemeValidation(bool) //Optional true or false
+    .UseCancelationToken(token) //Optional if you wanna have posibility to cancel migration process. Might be usefull when you have many migrations and some interaction with user.
+    .UseProgressHandler(Action<> action) // Optional some delegate that will be called each migration
+    .Run(targetVersion) // Execution call. Might be called without targetVersion, in that case, the engine will choose the latest available version.
 ```
 **In case if handler does not found and validation has failed** - migration process will cancel automatically.
 
 If you not test your migration yet, mark it by `IgnoreMigration` attribute, and runner will skip it.
 
-You can't check if database is outdated by calling `runner.Status.IsNotLatestVersion(newestVersion))` or `runner.Status.ThrowIfNotLatestVersion(newestVersion)`. The last one throw `DatabaseOutdatedExcetion` when database is outdated.
-
+You can't check if database is outdated by dint of static class `MongoDatabaseStateChecker`
+|Method|Description|
+|-|-|
+|`ThrowIfDatabaseOutdated(connectionString,databaseName)`|Check is DB outdated and throw `DatabaseOutdatedExcetion` if yes|
+|`IsDatabaseOutdated((connectionString,databaseName)`|Returns `true` if DB outdated (you have unapplied migrations) otherwise `false`|
+### CI/CD
+Now you have a chance to integrate mongo database migration engine in your CI pipeline. In repository you can found `MongoDBRunMigration.ps1` script. This approach allows you to have some backup rollback in case of any failure during migration.
+|Parameter|Description|
+|-|-|
+|connectionString|Database connection string|
+|databaseName|Name of the database|
+|backupLocation|Folder for the backup that will be created befor migration|
+|migrationsAssemblyPath|Path to the assembly with migration classes|
 Tips
 --
 1. Use **{migrationVerstion}_{migrationName}.cs** pattern of you migration classes.

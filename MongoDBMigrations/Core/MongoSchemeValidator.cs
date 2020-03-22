@@ -80,7 +80,7 @@ namespace MongoDBMigrations.Core
             {
                 var tree = file.GetSyntaxTreeAsync().Result;
                 var methods = finder.FindMethods(tree.GetRoot());
-                if(methods.Any())
+                if (methods.Any())
                 {
                     var model = compilation.GetSemanticModel(tree);
                     collectionNames.AddRange(methods.SelectMany(item => FindCollectionNames(model, item)));
