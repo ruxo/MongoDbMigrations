@@ -75,9 +75,15 @@ You can't check if database is outdated by dint of static class `MongoDatabaseSt
 |`IsDatabaseOutdated((connectionString,databaseName)`|Returns `true` if DB outdated (you have unapplied migrations) otherwise `false`|
 ### CI/CD
 Now you have a chance to integrate mongo database migration engine in your CI pipeline. In repository you can found `MongoDBRunMigration.ps1` script. This approach allows you to have some backup rollback in case of any failure during migration.
+Call the following commands prior using this PS1 file:
+```ps1
+Set-Alias mongodump <path_without_spaces>
+Set-Alias mongorestore <path_without_spaces>
+```
+Paths should lead to executable files (*.exe). Please, modify the PS1 file if you have any authorization in your database.
 |Parameter|Description|
 |-|-|
-|connectionString|Database connection string|
+|connectionString|Database connection string e.g. localhost:27017|
 |databaseName|Name of the database|
 |backupLocation|Folder for the backup that will be created befor migration|
 |migrationsAssemblyPath|Path to the assembly with migration classes|
