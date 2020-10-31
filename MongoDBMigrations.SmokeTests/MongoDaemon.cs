@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace MongoDBMigrations.SmokeTests
 {
@@ -14,7 +14,6 @@ namespace MongoDBMigrations.SmokeTests
         public string Port { get; private set; }
 
         private readonly string _dbFolder;
-        private readonly string _mongoFolder;
         protected Process process;
 
         public MongoDaemon()
@@ -32,7 +31,6 @@ namespace MongoDBMigrations.SmokeTests
             Host = config["host"];
             Port = config["port"];
 
-            _mongoFolder = Path.GetDirectoryName(config["mongoFolder"]);
             _dbFolder = Path.GetDirectoryName(config["dbFolder"]);
 
             //Re-create db folder if it exists

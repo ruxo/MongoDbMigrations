@@ -1,10 +1,9 @@
-﻿using NUnit.Framework;
-using NUnit.Framework.Constraints;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MongoDBMigrations.SmokeTests
 {
-    [TestFixture]
+    [TestClass]
     public class SimpleUpDownTests
     {
         private readonly MongoDaemon _daemon;
@@ -14,7 +13,7 @@ namespace MongoDBMigrations.SmokeTests
             _daemon = new MongoDaemon();
         }
 
-        [SetUp]
+        [TestInitialize]
         public void SetUp()
         {
             //Drop all data from database
@@ -25,14 +24,15 @@ namespace MongoDBMigrations.SmokeTests
             _daemon.Execute("db.users.insertMany([{name:'Alex', age: 17},{name:'Max', age: 25}])");
         }
 
-        [OneTimeTearDown]
+        [TestCleanup]
         public void TearDown()
         {
             _daemon.Dispose();
         }
 
-        [TestCase("1.0.0")]
-        [TestCase("1.1.0")]
+        [DataTestMethod]
+        [DataRow("1.0.0")]
+        [DataRow("1.1.0")]
         public void DefaultUpdateTestSuccess(string version)
         {
             var target = new Version(version);
@@ -45,8 +45,9 @@ namespace MongoDBMigrations.SmokeTests
             Assert.AreEqual(target, result.CurrentVersion);
         }
 
-        [TestCase("1.0.0")]
-        [TestCase("1.1.0")]
+        [DataTestMethod]
+        [DataRow("1.0.0")]
+        [DataRow("1.1.0")]
         public void WithProgressHandlingUpdateTestSuccess(string version)
         {
             var actions = new List<string>();
@@ -63,16 +64,15 @@ namespace MongoDBMigrations.SmokeTests
             Assert.AreEqual(target, result.CurrentVersion);
         }
 
-        [Test]
+        [TestMethod]
+        [ExpectedException(typeof(MigrationNotFoundException))]
         public void MigrationNotFoundShouldThrowException()
         {
             var target = new Version(99,99,99);
-            ActualValueDelegate<object> testDelegate = () => new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
+            new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
                 .UseAssemblyOfType<MongoDaemon>()
                 .UseSchemeValidation(false)
                 .Run(target);
-
-            Assert.That(testDelegate, Throws.TypeOf<MigrationNotFoundException>());
         }
     }
 }
