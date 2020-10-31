@@ -1,8 +1,6 @@
 ﻿using NUnit.Framework;
 using NUnit.Framework.Constraints;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MongoDBMigrations.SmokeTests
 {
@@ -20,11 +18,11 @@ namespace MongoDBMigrations.SmokeTests
         public void SetUp()
         {
             //Drop all data from database
-            _daemon.Query("db.users.drop()");
-            _daemon.Query("db.getCollection('_migrations').drop()");
+            _daemon.Execute("db.users.drop()");
+            _daemon.Execute("db.getCollection('_migrations').drop()");
             //Create test collection with some data
-            _daemon.Query("db.createCollection('users')");
-            _daemon.Query("db.users.insertMany([{name:'Alex', age: 17},{name:'Max', age: 25}])");
+            _daemon.Execute("db.createCollection('users')");
+            _daemon.Execute("db.users.insertMany([{name:'Alex', age: 17},{name:'Max', age: 25}])");
         }
 
         [OneTimeTearDown]

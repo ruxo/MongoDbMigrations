@@ -1,0 +1,17 @@
+{
+  "windows": {
+    "dbFolder": "C:\\\\data\\db\\",
+    "connectionString": "mongodb://localhost:27017",
+    "databaseName": "test",
+    "host": "localhost",
+    "port": "27017"
+  },
+  "osx": {
+    "dbFolder": "/Users/arthur_osmokiesku/data/db/",
+    "connectionString": "mongodb://localhost:27017",
+    "databaseName": "test",
+    "host": "localhost",
+    "port": "27017"
+  }
+}
+

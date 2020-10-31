@@ -1,26 +1,13 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
-using System.Configuration;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.IO;
 
 namespace MongoDBMigrations.SmokeTests
 {
     public class MongoDaemon : IDisposable
     {
-        /*
-#if DEBUG
-        public const string ConnectionString = "mongodb://localhost:27017";
-        public const string DatabaseName = "test";
-        public const string Host = "localhost";
-        public const string Port = "27017";
-#else
-        public const string ConnectionString = "mongodb://localhost:27017";
-        public const string DatabaseName = "MongoDBMigrationTests";
-        public const string Host = "localhost";
-        public const string Port = "27017";
-#endif
-*/
         public string ConnectionString { get; private set; }
         public string DatabaseName { get; private set; }
         public string Host { get; private set; }
@@ -32,9 +19,13 @@ namespace MongoDBMigrations.SmokeTests
 
         public MongoDaemon()
         {
+            //This class is only for test/dev purposes. And supports only windows and osx platform as a development environment.
+            string section = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "osx";
+
             var config = new ConfigurationBuilder()
-                .AddJsonFile("app.json")
-                .Build();
+                .AddJsonFile("local.json")
+                .Build()
+                .GetSection(section);
 
             ConnectionString = config["connectionString"];
             DatabaseName = config["databaseName"];
@@ -51,10 +42,17 @@ namespace MongoDBMigrations.SmokeTests
                 Directory.CreateDirectory(_dbFolder);
             }
 
-            process = new Process();
-            process.StartInfo.FileName = Path.Combine(_mongoFolder, "mongod.exe");
-            process.StartInfo.Arguments = $"--dbpath {_dbFolder}  --storageEngine ephemeralForTest";
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            var psi = new ProcessStartInfo
+            {
+                FileName = "mongod",
+                Arguments = $"--dbpath {_dbFolder}  --storageEngine ephemeralForTest",
+                UseShellExecute = false
+            };
+
+            process = new Process
+            {
+                StartInfo = psi
+            };
             process.Start();
         }
 
@@ -66,20 +64,26 @@ namespace MongoDBMigrations.SmokeTests
             }
         }
 
-        public virtual string Query(string query)
+        public virtual void Execute(string query)
         {
-            var output = string.Empty;
+            string output = null;
+            var psi = new ProcessStartInfo
+            {
+                FileName = "mongo",
+                Arguments = $"--host {Host} --port {Port} --quiet --eval \"{query}\"",
+                CreateNoWindow = true,
+                RedirectStandardOutput = true
+            };
 
-            var procQuery = new Process();
-            procQuery.StartInfo.FileName = Path.Combine(_mongoFolder, "mongo.exe");
-            procQuery.StartInfo.Arguments = $"--host {Host} --port {Port} --quiet --eval \"{query}\"";
-            procQuery.StartInfo.UseShellExecute = false;
-            procQuery.StartInfo.RedirectStandardOutput = true;
-            procQuery.StartInfo.CreateNoWindow = true;
+            var procQuery = new Process
+            {
+                StartInfo = psi
+            };
             procQuery.Start();
 
             while (!procQuery.StandardOutput.EndOfStream)
             {
+
                 output += procQuery.StandardOutput.ReadLine() + Environment.NewLine;
             }
 
@@ -87,8 +91,6 @@ namespace MongoDBMigrations.SmokeTests
             {
                 procQuery.Kill();
             }
-
-            return output;
         }
     }
 }
