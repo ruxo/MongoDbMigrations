@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Reflection;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoDBMigrations.Document;
 
@@ -13,23 +15,59 @@ namespace MongoDBMigrations
         private const string SPECIFICATION_COLLECTION_NAME = "_migrations";
         private readonly IMongoDatabase _database;
 
-        public DatabaseManager(IMongoDatabase database)
+        #region Compatibility Checks
+        private bool IsAzureCosmosDBCompatible(bool isInitial)
+        {
+            if(_database == null)
+            {
+                throw new TypeInitializationException(nameof(DatabaseManager), new Exception($"{nameof(_database)} hasn't been initialized."));
+            }
+
+            if (isInitial) //If it's a fist migration run and there are no records in the _migrations collection.
+            {
+                //Just create an index
+                var indexOptions = new CreateIndexOptions<SpecificationItem>();
+                var indexKey = Builders<SpecificationItem>.IndexKeys.Ascending(x => x.ApplyingDateTime);
+                var indexModel = new CreateIndexModel<SpecificationItem>(indexKey, indexOptions);
+                var collection = _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME);
+                collection.Indexes.CreateOne(indexModel);
+                return true;
+            }
+
+            //Check that index exisist and return true, otherwise false.
+            var indexes = _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME).Indexes.List().ToList();
+            var targetIndex = typeof(SpecificationItem)
+                .GetProperty(nameof(SpecificationItem.ApplyingDateTime))
+                .GetCustomAttribute<BsonElementAttribute>()
+                .ElementName;
+            return indexes.Any(x => x.GetValue("name").ToString().StartsWith(targetIndex));
+        }
+        #endregion
+
+        public DatabaseManager(IMongoDatabase database, MongoEmulationEnum emulation)
         {
             _database = database ?? throw new TypeInitializationException("Database can't be null", null);
-
+            bool isInitial = false;
             if (!_database.ListCollectionNames().ToList().Contains(SPECIFICATION_COLLECTION_NAME))
             {
                 _database.CreateCollection(SPECIFICATION_COLLECTION_NAME);
+                isInitial = true;
             }
+
+            switch(emulation)
+            {
+                case MongoEmulationEnum.AzureCosmos when !IsAzureCosmosDBCompatible(isInitial):
+                    throw new InvalidOperationException($@"Your current setup isn't ready for this migration run.
+                        Please create an ascending index to the filed '{typeof(SpecificationItem).GetProperty(nameof(SpecificationItem.ApplyingDateTime)).GetCustomAttribute<BsonElementAttribute>().ElementName}'
+                        at collection '{SPECIFICATION_COLLECTION_NAME}' manually and retry the migration run. Be aware that indexing may take some time.");
+                default:
+                    return;
+            }
+
         }
         private IMongoCollection<SpecificationItem> GetAppliedMigrations()
         {
             return _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME);
-        }
-
-        private bool IsNotLatestVersion(Version newestVersion)
-        {
-            return newestVersion != GetVersion();
         }
 
         /// <summary>

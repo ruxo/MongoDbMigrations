@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
+using MongoDBMigrations.Document;
 
 namespace MongoDBMigrations
 {
@@ -25,14 +26,14 @@ namespace MongoDBMigrations
             BsonSerializer.RegisterSerializer(typeof(Version), new VerstionSerializer());
         }
 
-        public ILocator UseDatabase(string connectionString, string databaseName)
+        public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
         {
             var database = new MongoClient(connectionString).GetDatabase(databaseName);
             return new MigrationEngine
             {
                 _database = database,
                 _locator = new MigrationManager(),
-                _status = new DatabaseManager(database)
+                _status = new DatabaseManager(database, emulation)
             };
         }
 
