@@ -22,11 +22,59 @@ namespace MongoDBMigrations.Core
         /// </summary>
         public List<string> MethodMarkers { get; } = new List<string>
         {
-            "GetCollection",
+            "GetCollection", //IMongoDatabase
             "CreateCollection",
             "CreateCollectionAsync",
             "DropCollection",
-            "DropCollectionAsync"
+            "DropCollectionAsync",
+            "ListCollectionNames",
+            "ListCollectionNamesAsync",
+            "ListCollections",
+            "ListCollectionsAsync",
+            "RenameCollection",
+            "RenameCollectionAsync",
+            "CreateView",
+            "CreateViewAsync",
+            "GetCollectionNames", //MongoDatabase
+            "BulkWrite", //IMongoCollection
+            "BulkWriteAsync",
+            "DeleteOne",
+            "DeleteOneAsync",
+            "DeleteMany",
+            "DeleteManyAsync",
+            "FindOneAndDelete",
+            "FindOneAndDeleteAsync",
+            "FindOneAndReplace",
+            "FindOneAndReplaceAsync",
+            "FindOneAndUpdate",
+            "FindOneAndUpdateAsync",
+            "InsertOne",
+            "InsertOneAsync",
+            "InsertMany",
+            "InsertManyAsync",
+            "ReplaceOne",
+            "ReplaceOneAsync",
+            "UpdateOne",
+            "UpdateOneAsync",
+            "UpdateMany",
+            "UpdateManyAsync",
+            "CreateIndex", //MongoCollection
+            "Drop",
+            "DropAllIndexes",
+            "DropIndex",
+            "DropIndexByName",
+            "EnsureIndex",
+            "FindAndModify",
+            "FindAndRemove",
+            "GetIndexes",
+            "IndexExists",
+            "IndexExistsByName",
+            "Insert",
+            "InsertBatch",
+            "Remove",
+            "RemoveAll",
+            "Save",
+            "Update"
         };
 
         /// <summary>
