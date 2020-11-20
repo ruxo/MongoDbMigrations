@@ -68,7 +68,7 @@ namespace MongoDBMigrations.SmokeTests
             var psi = new ProcessStartInfo
             {
                 FileName = "mongo",
-                Arguments = $"--host {Host} --port {Port} --quiet --eval \"{query}\"",
+                Arguments = $"{DatabaseName} --host {Host} --port {Port} --quiet --eval \"{query}\"",
                 CreateNoWindow = true,
                 RedirectStandardOutput = true
             };

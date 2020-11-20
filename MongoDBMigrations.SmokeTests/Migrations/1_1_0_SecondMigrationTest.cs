@@ -11,9 +11,9 @@ namespace MongoDBMigrations.SmokeTests.Migrations
 
         public void Down(IMongoDatabase database)
         {
-            var collection = database.GetCollection<BsonDocument>("user");
+            var collection = database.GetCollection<BsonDocument>("clients");
             var list = collection.Find(FilterDefinition<BsonDocument>.Empty).ToList();
-            FieldDefinition<BsonDocument, int> fieldDefenition = "users.age";
+            FieldDefinition<BsonDocument, int> fieldDefenition = "clients.age";
             foreach (var item in list)
             {
                 collection.UpdateOne(new BsonDocument("_id", item["_id"]),
@@ -23,9 +23,9 @@ namespace MongoDBMigrations.SmokeTests.Migrations
 
         public void Up(IMongoDatabase database)
         {
-            var collection = database.GetCollection<BsonDocument>("user");
+            var collection = database.GetCollection<BsonDocument>("clients");
             var list = collection.Find(FilterDefinition<BsonDocument>.Empty).ToList();
-            FieldDefinition<BsonDocument, string> fieldDefenition = "users.age";
+            FieldDefinition<BsonDocument, string> fieldDefenition = "clients.age";
             foreach (var item in list)
             {
                 collection.UpdateOne(new BsonDocument("_id", item["_id"]),

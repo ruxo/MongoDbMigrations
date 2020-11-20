@@ -11,14 +11,14 @@ namespace MongoDBMigrations.SmokeTests.Migrations
 
         public void Down(IMongoDatabase database)
         {
-            var collection = database.GetCollection<BsonDocument>("user");
+            var collection = database.GetCollection<BsonDocument>("clients");
             collection.UpdateMany(FilterDefinition<BsonDocument>.Empty,
                 Builders<BsonDocument>.Update.Rename("firstName", "name"));
         }
 
         public void Up(IMongoDatabase database)
         {
-            var collection = database.GetCollection<BsonDocument>("user");
+            var collection = database.GetCollection<BsonDocument>("clients");
             collection.UpdateMany(FilterDefinition<BsonDocument>.Empty,
                 Builders<BsonDocument>.Update.Rename("name", "firstName"));
         }

@@ -33,48 +33,7 @@ namespace MongoDBMigrations.Core
             "ListCollectionsAsync",
             "RenameCollection",
             "RenameCollectionAsync",
-            "CreateView",
-            "CreateViewAsync",
             "GetCollectionNames", //MongoDatabase
-            "BulkWrite", //IMongoCollection
-            "BulkWriteAsync",
-            "DeleteOne",
-            "DeleteOneAsync",
-            "DeleteMany",
-            "DeleteManyAsync",
-            "FindOneAndDelete",
-            "FindOneAndDeleteAsync",
-            "FindOneAndReplace",
-            "FindOneAndReplaceAsync",
-            "FindOneAndUpdate",
-            "FindOneAndUpdateAsync",
-            "InsertOne",
-            "InsertOneAsync",
-            "InsertMany",
-            "InsertManyAsync",
-            "ReplaceOne",
-            "ReplaceOneAsync",
-            "UpdateOne",
-            "UpdateOneAsync",
-            "UpdateMany",
-            "UpdateManyAsync",
-            "CreateIndex", //MongoCollection
-            "Drop",
-            "DropAllIndexes",
-            "DropIndex",
-            "DropIndexByName",
-            "EnsureIndex",
-            "FindAndModify",
-            "FindAndRemove",
-            "GetIndexes",
-            "IndexExists",
-            "IndexExistsByName",
-            "Insert",
-            "InsertBatch",
-            "Remove",
-            "RemoveAll",
-            "Save",
-            "Update"
         };
 
         /// <summary>
@@ -134,7 +93,6 @@ namespace MongoDBMigrations.Core
                     collectionNames.AddRange(methods.SelectMany(item => FindCollectionNames(model, item)));
                 }
             }
-
             return Check(database, collectionNames);
         }
 
@@ -174,7 +132,7 @@ namespace MongoDBMigrations.Core
         private SchemeValidationResult Check(IMongoDatabase database, IEnumerable<string> names)
         {
             var result = new SchemeValidationResult();
-            foreach (var name in names)
+            foreach (var name in names.Distinct())
             {
                 bool isFailed = false;
                 var collection = database.GetCollection<BsonDocument>(name);

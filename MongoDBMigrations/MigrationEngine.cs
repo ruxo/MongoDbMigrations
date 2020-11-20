@@ -197,6 +197,8 @@ namespace MongoDBMigrations
             this._schemeValidationNeeded = enabled;
             if (enabled)
             {
+                if (string.IsNullOrEmpty(location))
+                    throw new ArgumentNullException(nameof(location));
                 this._migrationProjectLocation = location;
             }
             return this;

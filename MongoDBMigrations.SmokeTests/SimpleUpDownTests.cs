@@ -16,12 +16,12 @@ namespace MongoDBMigrations.SmokeTests
         [TestInitialize]
         public void SetUp()
         {
-            //Drop all data from database
-            _daemon.Execute("db.users.drop()");
+            //Drop all data from the database
+            _daemon.Execute("db.clients.drop()");
             _daemon.Execute("db.getCollection('_migrations').drop()");
             //Create test collection with some data
-            _daemon.Execute("db.createCollection('users')");
-            _daemon.Execute("db.users.insertMany([{name:'Alex', age: 17},{name:'Max', age: 25}])");
+            _daemon.Execute("db.createCollection('clients')");
+            _daemon.Execute("db.clients.insertMany([{name:'Alex', age: 17},{name:'Max', age: 25}])");
         }
 
         [TestCleanup]

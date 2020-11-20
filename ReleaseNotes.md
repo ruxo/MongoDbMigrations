@@ -1,5 +1,14 @@
 # MongoDBMigrations
 
+### v2.1.0
+  - Added: Azure CosmosDB support
+  - Added: Increased C# Mongo Driver API coverage in schema validator feature
+  - Changed: Fixed CI/CD script
+  - Changed: Updated dependencies
+  - Changed: Fixed [list of bugs](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/issues?version=v2.0.0)
+
+***
+
 ### v2.0.0
   - Added: Totaly brand new fluent API
   - Added: Callback for steps
