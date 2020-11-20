@@ -16,7 +16,7 @@ This version supports on-premise Mongo database either Azure CosmosDB (with Mong
 PS1 script for integration with CI/CD pipelines provides inside of the repository</Description>
     <PackageTags>mongo mongodb migration schema-migration csharp dotnet schema migrator database-migration database .net fluent api ci/cd azure cosmos cosmosdb</PackageTags>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <PackageReleaseNotes>https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/ReleaseNotes.md</PackageReleaseNotes>
     <AssemblyVersion>2.1.0.0</AssemblyVersion>
     <FileVersion>2.1.0.0</FileVersion>
