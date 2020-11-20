@@ -1,7 +1,7 @@
-# MongoDBMigrations
+# MongoDBMigrations [![NuGet](https://img.shields.io/badge/nuget%20package-v2.1.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
-[![NuGet](https://img.shields.io/badge/nuget%20package-v2.1.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 You can support me in the development of this useful library. I have big plans you can find them in todo below. I will appreciate pizza and beer;) 
+
 [![Donation](https://img.shields.io/badge/donate-PayPal-blue?style=for-the-badge)](https://www.paypal.com/donate?hosted_button_id=7XZYF8AA8M6QU)
 
 
@@ -73,14 +73,17 @@ new MigrationEngine().UseDatabase(connectionString, databaseName) //Required to 
 If you did not test your migration yet, mark it with `IgnoreMigration` attribute, and the runner will skip it.
 
 You can't check if the database is outdated by dint of static class `MongoDatabaseStateChecker`
+
 |Method|Description|
 |--------|--------|
 |`ThrowIfDatabaseOutdated(connectionString, databaseName, migrationAssambly, emulation)`|Check is DB outdated and throw `DatabaseOutdatedExcetion` if yes. MigrationAssambly is optional. If not set method will find migration in executing assembly. Emulation has a `None` value by default for Mongo databases, but you should use the `AzureCosmos` option in case of Azure Cosmos DB|
 |`IsDatabaseOutdated(connectionString, databaseName, migrationAssambly, emulation)`|Returns `true` if DB outdated (you have unapplied migrations) otherwise `false`. MigrationAssambly is optional. If not set method will find migration in executing assembly. Emulation has a `None` value by default for Mongo databases, but you should use the `AzureCosmos` option in case of Azure Cosmos DB|
+
 #### Azure CosmosDB support
 Begins from `v2.1.0` this library supports databases in Azure CosmosDB service. There might be two cases:
 * You haven't use this library before. No manual action needed, everithing will work ok.
 * You already have some executed migrations with earlier version of this library. In this case you should ensure that you have an ascending index for filed `applied` in `_migrations` collection. If you don't have this index please create them prior you strart the migration run.
+
 #### CI/CD
 Now you have a chance to integrate the mongo database migration engine in your CI pipeline. In repository you can found `MongoDBRunMigration.ps1` script. This approach allows you to have some backup rollback in case of any failure during migration.
 Call the following commands prior to using this PS1 file:
@@ -89,22 +92,25 @@ Set-Alias mongodump <path_without_spaces>
 Set-Alias mongorestore <path_without_spaces>
 ```
 Paths should lead to executable files (*.exe). Please, modify the PS1 file if you have any authorization in your database.
+
 |Parameter|Description|
 |--------|--------|
 |connectionString|Database connection string e.g. localhost:27017|
 |databaseName|Name of the database|
 |backupLocation|Folder for the backup that will be created befor migration|
 |migrationsAssemblyPath|Path to the assembly with migration classes|
+
+
 Tips
 --
 1. Use **{migrationVerstion}_{migrationName}.cs** pattern of you migration classes.
-1. Save your migrations in non-production assemblies and use the method `LookInAssemblyOfType<T>()` of `MigratiotionLocator` to finding them.
-1. Keep migrations as simple as possible
-1. Do not couple migrations to your domain types, they will be brittle to change, and the point of migration is to update the data representation when your model changes.
-1. Stick to the mongo BsonDocument interface or use javascript based mongo commands for migrations, much like with SQL, the mongo javascript API is less likely to change which might break migrations
-1. Add an application startup check that the database is at the correct version
-1. Write tests of your migrations, TDD them from existing data scenarios to new forms. Use `IgnoreMigration`attribute while WIP.
-1. Automate the deployment of migrations
+2. Save your migrations in non-production assemblies and use the method `LookInAssemblyOfType<T>()` of `MigratiotionLocator` to finding them.
+3. Keep migrations as simple as possible
+4. Do not couple migrations to your domain types, they will be brittle to change, and the point of migration is to update the data representation when your model changes.
+5. Stick to the mongo BsonDocument interface or use javascript based mongo commands for migrations, much like with SQL, the mongo javascript API is less likely to change which might break migrations
+6. Add an application startup check that the database is at the correct version
+7. Write tests of your migrations, TDD them from existing data scenarios to new forms. Use `IgnoreMigration`attribute while WIP.
+8. Automate the deployment of migrations
 
 
 License
