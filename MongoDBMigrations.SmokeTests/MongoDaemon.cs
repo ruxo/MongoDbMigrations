@@ -51,7 +51,9 @@ namespace MongoDBMigrations.SmokeTests
             {
                 StartInfo = psi
             };
-            process.Start();
+
+            //TODO: Uncomment next line
+            //process.Start();
         }
 
         public void Dispose()
@@ -65,10 +67,14 @@ namespace MongoDBMigrations.SmokeTests
         public virtual void Execute(string query)
         {
             string output = null;
+
+
+            var tlsSupport = "--sslAllowInvalidHostnames --tls --tlsCAFile /Users/arthur_osmokiesku/Downloads/rds-combined-ca-bundle.pem --username adminarthur --password Test1234";
+            var nonTlsSupport = $"--host {Host} --port {Port}";
             var psi = new ProcessStartInfo
             {
                 FileName = "mongo",
-                Arguments = $"{DatabaseName} --host {Host} --port {Port} --quiet --eval \"{query}\"",
+                Arguments = $"{tlsSupport} --quiet --eval \"{query}\"",
                 CreateNoWindow = true,
                 RedirectStandardOutput = true
             };
@@ -84,7 +90,6 @@ namespace MongoDBMigrations.SmokeTests
 
                 output += procQuery.StandardOutput.ReadLine() + Environment.NewLine;
             }
-
             if (!procQuery.WaitForExit(2000))
             {
                 procQuery.Kill();

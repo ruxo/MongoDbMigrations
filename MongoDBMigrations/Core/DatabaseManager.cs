@@ -42,6 +42,13 @@ namespace MongoDBMigrations
                 .ElementName;
             return indexes.Any(x => x.GetValue("name").ToString().StartsWith(targetIndex));
         }
+
+        private bool IsAwsDocumentDbCompatible()
+        {
+            //TODO: Should be implemented.
+            return true;
+        }
+
         #endregion
 
         public DatabaseManager(IMongoDatabase database, MongoEmulationEnum emulation)
@@ -60,6 +67,8 @@ namespace MongoDBMigrations
                     throw new InvalidOperationException($@"Your current setup isn't ready for this migration run.
                         Please create an ascending index to the filed '{typeof(SpecificationItem).GetProperty(nameof(SpecificationItem.ApplyingDateTime)).GetCustomAttribute<BsonElementAttribute>().ElementName}'
                         at collection '{SPECIFICATION_COLLECTION_NAME}' manually and retry the migration run. Be aware that indexing may take some time.");
+                case MongoEmulationEnum.AwsDocument when !IsAwsDocumentDbCompatible():
+                    throw new InvalidOperationException("TBD"); //TODO: Message should be defined.
                 default:
                     return;
             }

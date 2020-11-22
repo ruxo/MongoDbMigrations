@@ -3,6 +3,7 @@
     public enum MongoEmulationEnum
     {
         None,
-        AzureCosmos
+        AzureCosmos,
+        AwsDocument
     }
 }

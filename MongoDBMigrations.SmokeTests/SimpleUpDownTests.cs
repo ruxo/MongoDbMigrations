@@ -36,7 +36,8 @@ namespace MongoDBMigrations.SmokeTests
         public void DefaultUpdateTestSuccess(string version)
         {
             var target = new Version(version);
-            var result = new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
+            var result = new MigrationEngine()
+                .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
                 .UseAssemblyOfType<MongoDaemon>()
                 .UseSchemeValidation(false)
                 .Run(target);
