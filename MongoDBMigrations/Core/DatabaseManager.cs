@@ -12,8 +12,22 @@ namespace MongoDBMigrations
     /// </summary>
     public class DatabaseManager
     {
-        private const string SPECIFICATION_COLLECTION_NAME = "_migrations";
+        private const string SPECIFICATION_COLLECTION_DEFAULT_NAME = "_migrations";
+        private string _specCollectionName;
         private readonly IMongoDatabase _database;
+
+        public string SpecCollectionName
+        {
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                    _specCollectionName = value;
+            }
+            get
+            {
+                return string.IsNullOrEmpty(_specCollectionName) ? SPECIFICATION_COLLECTION_DEFAULT_NAME : _specCollectionName;
+            }
+        }
 
         #region Compatibility Checks
         private bool IsAzureCosmosDBCompatible(bool isInitial)
@@ -29,13 +43,13 @@ namespace MongoDBMigrations
                 var indexOptions = new CreateIndexOptions<SpecificationItem>();
                 var indexKey = Builders<SpecificationItem>.IndexKeys.Ascending(x => x.ApplyingDateTime);
                 var indexModel = new CreateIndexModel<SpecificationItem>(indexKey, indexOptions);
-                var collection = _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME);
+                var collection = _database.GetCollection<SpecificationItem>(SpecCollectionName);
                 collection.Indexes.CreateOne(indexModel);
                 return true;
             }
 
             //Check that index exisist and return true, otherwise false.
-            var indexes = _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME).Indexes.List().ToList();
+            var indexes = _database.GetCollection<SpecificationItem>(SpecCollectionName).Indexes.List().ToList();
             var targetIndex = typeof(SpecificationItem)
                 .GetProperty(nameof(SpecificationItem.ApplyingDateTime))
                 .GetCustomAttribute<BsonElementAttribute>()
@@ -55,9 +69,9 @@ namespace MongoDBMigrations
         {
             _database = database ?? throw new TypeInitializationException("Database can't be null", null);
             bool isInitial = false;
-            if (!_database.ListCollectionNames().ToList().Contains(SPECIFICATION_COLLECTION_NAME))
+            if (!_database.ListCollectionNames().ToList().Contains(SpecCollectionName))
             {
-                _database.CreateCollection(SPECIFICATION_COLLECTION_NAME);
+                _database.CreateCollection(SpecCollectionName);
                 isInitial = true;
             }
 
@@ -66,7 +80,7 @@ namespace MongoDBMigrations
                 case MongoEmulationEnum.AzureCosmos when !IsAzureCosmosDBCompatible(isInitial):
                     throw new InvalidOperationException($@"Your current setup isn't ready for this migration run.
                         Please create an ascending index to the filed '{typeof(SpecificationItem).GetProperty(nameof(SpecificationItem.ApplyingDateTime)).GetCustomAttribute<BsonElementAttribute>().ElementName}'
-                        at collection '{SPECIFICATION_COLLECTION_NAME}' manually and retry the migration run. Be aware that indexing may take some time.");
+                        at collection '{SpecCollectionName}' manually and retry the migration run. Be aware that indexing may take some time.");
                 case MongoEmulationEnum.AwsDocument when !IsAwsDocumentDbCompatible():
                     throw new InvalidOperationException("TBD"); //TODO: Message should be defined.
                 default:
@@ -76,7 +90,7 @@ namespace MongoDBMigrations
         }
         private IMongoCollection<SpecificationItem> GetAppliedMigrations()
         {
-            return _database.GetCollection<SpecificationItem>(SPECIFICATION_COLLECTION_NAME);
+            return _database.GetCollection<SpecificationItem>(SpecCollectionName);
         }
 
         /// <summary>

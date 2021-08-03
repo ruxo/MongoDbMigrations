@@ -8,6 +8,7 @@ namespace MongoDBMigrations
     {
         IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action);
         IMigrationRunner UseCancelationToken(CancellationToken token);
+        IMigrationRunner UseCustomSpecificationCollectionName(string name);
         MigrationResult Run(Version version);
         MigrationResult Run();
     }

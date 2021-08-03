@@ -28,8 +28,6 @@ namespace MongoDBMigrations
 
         public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
         {
-            
-
             var database = new MongoClient(connectionString).GetDatabase(databaseName);
             return new MigrationEngine
             {
@@ -206,6 +204,16 @@ namespace MongoDBMigrations
                     throw new ArgumentNullException(nameof(location));
                 this._migrationProjectLocation = location;
             }
+            return this;
+        }
+
+        public IMigrationRunner UseCustomSpecificationCollectionName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentNullException(nameof(name));
+            _status.SpecCollectionName = name;
+
+
             return this;
         }
     }
