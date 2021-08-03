@@ -61,7 +61,8 @@ namespace MongoDBMigrations
             {
                 ServerAdress = string.Join(",", _database.Client.Settings.Servers),
                 DatabaseName = _database.DatabaseNamespace.DatabaseName,
-                InterimSteps = new List<InterimMigrationResult>()
+                InterimSteps = new List<InterimMigrationResult>(),
+                Success = true
             };
 
             if (!migrations.Any())
@@ -83,6 +84,7 @@ namespace MongoDBMigrations
                 var validationResult = validator.Validate(migrations, isUp, _migrationProjectLocation, _database);
                 if (validationResult.FailedCollections.Any())
                 {
+                    result.Success = false;
                     var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
                     throw new InvalidOperationException($"Some schema validation issues found in: {failedCollections}");
                 }
@@ -119,6 +121,7 @@ namespace MongoDBMigrations
                 }
                 catch (Exception ex)
                 {
+                    result.Success = false;
                     throw new InvalidOperationException("Something went wrong during migration", ex);
                 }
                 finally

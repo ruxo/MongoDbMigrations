@@ -13,7 +13,7 @@ namespace MongoDBMigrations.SmokeTests.Migrations
         {
             var collection = database.GetCollection<BsonDocument>("clients");
             var list = collection.Find(FilterDefinition<BsonDocument>.Empty).ToList();
-            FieldDefinition<BsonDocument, int> fieldDefenition = "clients.age";
+            FieldDefinition<BsonDocument, int> fieldDefenition = "age";
             foreach (var item in list)
             {
                 collection.UpdateOne(new BsonDocument("_id", item["_id"]),
@@ -25,7 +25,7 @@ namespace MongoDBMigrations.SmokeTests.Migrations
         {
             var collection = database.GetCollection<BsonDocument>("clients");
             var list = collection.Find(FilterDefinition<BsonDocument>.Empty).ToList();
-            FieldDefinition<BsonDocument, string> fieldDefenition = "clients.age";
+            FieldDefinition<BsonDocument, string> fieldDefenition = "age";
             foreach (var item in list)
             {
                 collection.UpdateOne(new BsonDocument("_id", item["_id"]),

@@ -9,5 +9,6 @@ namespace MongoDBMigrations
         public List<InterimMigrationResult> InterimSteps;
         public string ServerAdress;
         public string DatabaseName;
+        public bool Success;
     }
 }
