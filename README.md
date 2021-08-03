@@ -2,7 +2,7 @@
 
 You can support me in the development of this useful library. I have big plans you can find them in todo below. I will appreciate pizza and beer;) 
 
-[![Donation](https://img.shields.io/badge/donate-PayPal-blue?style=for-the-badge)](https://www.paypal.com/donate?hosted_button_id=7XZYF8AA8M6QU)
+[![Become a patreon](https://img.shields.io/badge/become%20a-patreon-FF424D?style=for-the-badge&logo=Patreon)](https://www.patreon.com/bePatron?u=56881304)
 
 
 MongoDBMigrations using the official [MongoDB C# Driver]( https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database. This library supports Azure CosmosDB (MongoAPI).
