@@ -52,8 +52,7 @@ namespace MongoDBMigrations.SmokeTests
                 StartInfo = psi
             };
 
-            //TODO: Uncomment next line
-            //process.Start();
+            process.Start();
         }
 
         public void Dispose()

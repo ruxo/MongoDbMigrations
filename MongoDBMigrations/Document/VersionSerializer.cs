@@ -1,11 +1,9 @@
-using System;
-using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 
 namespace MongoDBMigrations
 {
-    public class VerstionSerializer : SerializerBase<Version>
+    public class VerstionStructSerializer : SerializerBase<Version>
     {
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, Version value)
         {

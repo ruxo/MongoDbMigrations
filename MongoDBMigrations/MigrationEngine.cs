@@ -8,7 +8,6 @@ using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDBMigrations.Document;
-using System.Security.Cryptography.X509Certificates;
 
 namespace MongoDBMigrations
 {
@@ -24,36 +23,12 @@ namespace MongoDBMigrations
 
         static MigrationEngine()
         {
-            BsonSerializer.RegisterSerializer(typeof(Version), new VerstionSerializer());
+            BsonSerializer.RegisterSerializer(typeof(Version), new VerstionStructSerializer());
         }
 
         public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
         {
-            //Experimental. Install a CA if don't exists
-            var localTrustStore = new X509Store(StoreName.Root);
-            var certificateCollection = new X509Certificate2Collection();
-            //TODO: I must to solve Interop.appleCrypto.ApplecommonCryptoCryptographicException Unknown format in import
-            // and then check something with without storing the pem cert
-            certificateCollection.Import("/Users/arthur_osmokiesku/Downloads/rds-combined-ca-bundle.pem");
-            try
-            {
-                localTrustStore.Open(OpenFlags.ReadWrite);
-                foreach(var cert in certificateCollection)
-                {
-                    if (localTrustStore.Certificates.Contains(cert))
-                        continue;
-
-                    localTrustStore.Add(cert);
-                }
-            }
-            catch(Exception ex)
-            {
-                throw;
-            }
-            finally
-            {
-                localTrustStore.Close();
-            }
+            
 
             var database = new MongoClient(connectionString).GetDatabase(databaseName);
             return new MigrationEngine
