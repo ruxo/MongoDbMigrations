@@ -4,22 +4,27 @@
     "connectionString": "mongodb://localhost:27017",
     "databaseName": "test",
     "host": "localhost",
-    "port": "27017"
+    "port": "27017",
+    "isLocal": true
   },
-  
+
   "osx": {
     "dbFolder": "/Users/arthur_osmokiesku/data/db/",
     "connectionString": "mongodb://localhost:27017",
     "databaseName": "test",
     "host": "localhost",
-    "port": "27017"
-  }
-  /*"osx": {
-    "dbFolder": "/Users/arthur_osmokiesku/data/db/",
-    "connectionString": "mongodb://adminarthur:Test1234@docdb-2020-11-21-12-08-47.cluster-c3cncv739ohu.eu-west-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=/Users/arthur_osmokiesku/Downloads/rds-combined-ca-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false",
+    "port": "27017",
+    "isLocal": true
+  },
+  //OSX to Azure Ubuntu VM machine
+  /*
+  "osx": {
+    "connectionString": "mongodb://40.112.76.155:27017",
     "databaseName": "test",
-    "host": "docdb-2020-11-21-12-08-47.cluster-c3cncv739ohu.eu-west-1.docdb.amazonaws.com",
-    "port": "27017"
-  }*/
+    "host": "240.112.76.155",
+    "port": "27017",
+    "isLocal": false
+  }
+  */
 }
 

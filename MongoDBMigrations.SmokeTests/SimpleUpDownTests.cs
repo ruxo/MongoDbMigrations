@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MongoDBMigrations.SmokeTests
@@ -74,6 +75,27 @@ namespace MongoDBMigrations.SmokeTests
                 .UseAssemblyOfType<MongoDaemon>()
                 .UseSchemeValidation(false)
                 .Run(target);
+        }
+
+        [TestMethod]
+        public void SimpleMigrationViaSSHTunell()
+        {
+            var target = new Version(1, 0, 0);
+
+            using(var fs = File.OpenRead("/Users/arthur_osmokiesku/Git/SSH keys/vm-mongodb-server_key.pem"))
+            {
+                var result = new MigrationEngine().UseDatabaseViaSSHTunnel(
+                        new Document.ServerAdressConfig { Host = "40.112.76.155", Port = 22 },
+                        "azureuser",
+                        fs,
+                        new Document.ServerAdressConfig { Host = "127.0.0.1", Port = 27017 },
+                        "test")
+                    .UseAssemblyOfType<MongoDaemon>()
+                    .UseSchemeValidation(false)
+                    .Run(target);
+
+                Assert.AreEqual(target, result.CurrentVersion);
+            }
         }
     }
 }

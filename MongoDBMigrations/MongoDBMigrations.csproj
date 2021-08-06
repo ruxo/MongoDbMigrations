@@ -35,8 +35,12 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
     <PackageReference Include="MongoDB.Bson" Version="2.11.3" />
     <PackageReference Include="MongoDB.Driver" Version="2.11.3" />
     <PackageReference Include="Buildalyzer.Workspaces" Version="2.6.0" />
+    <PackageReference Include="SSH.NET" Version="2020.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="SSH.NET" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="..\MIT.md">
       <Pack>True</Pack>

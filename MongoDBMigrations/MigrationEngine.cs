@@ -8,11 +8,15 @@ using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDBMigrations.Document;
+using Renci.SshNet;
+using System.IO;
 
 namespace MongoDBMigrations
 {
     public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner
     {
+        private const string LOCALHOST = "127.0.0.1";
+
         private IMongoDatabase _database;
         private MigrationManager _locator;
         private DatabaseManager _status;
@@ -20,6 +24,8 @@ namespace MongoDBMigrations
         private string _migrationProjectLocation;
         private CancellationToken _token;
         private IList<Action<InterimMigrationResult>> _progressHandlers;
+        private SshClient _sshClient;
+        private ForwardedPortLocal _forwardedPortLocal;
 
         static MigrationEngine()
         {
@@ -37,6 +43,39 @@ namespace MongoDBMigrations
             };
         }
 
+        private ILocator EstablishConnectionViaSsh(SshClient client, ServerAdressConfig mongoAdress, string databaseName)
+        {
+            client.Connect();
+            var forwardedPortLocal = new ForwardedPortLocal(LOCALHOST, 3422, mongoAdress.Host, mongoAdress.Port);
+            client.AddForwardedPort(forwardedPortLocal);
+            forwardedPortLocal.Start();
+
+            var database = new MongoClient(new MongoClientSettings
+            {
+                Server = new MongoServerAddress(LOCALHOST, 3422)
+            }).GetDatabase(databaseName);
+
+            return new MigrationEngine
+            {
+                _database = database,
+                _locator = new MigrationManager(),
+                _status = new DatabaseManager(database, MongoEmulationEnum.None),
+                _sshClient = client,
+                _forwardedPortLocal = forwardedPortLocal
+            };
+        }
+
+        public ILocator UseDatabaseViaSSHTunnel(ServerAdressConfig sshAdress, string sshUser, string sshPassword, ServerAdressConfig mongoAdress, string databaseName)
+        { 
+            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, sshPassword), mongoAdress, databaseName);
+        }
+
+        public ILocator UseDatabaseViaSSHTunnel(ServerAdressConfig sshAdress, string sshUser, Stream privateKeyFileStream, ServerAdressConfig mongoAdress, string databaseName, string keyFilePassPhrase = null)
+        {
+            var keyFile = keyFilePassPhrase == null ? new PrivateKeyFile(privateKeyFileStream) : new PrivateKeyFile(privateKeyFileStream, keyFilePassPhrase);
+            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, new[] { keyFile }), mongoAdress, databaseName);
+        }
+
         public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action)
         {
             if (action == null)
@@ -52,90 +91,101 @@ namespace MongoDBMigrations
 
         private MigrationResult RunInternal(Version version)
         {
-            var currentDatabaseVersion = _status.GetVersion();
-            var migrations = _locator.GetMigrations(currentDatabaseVersion, version);
-
-            var result = new MigrationResult
+            try
             {
-                ServerAdress = string.Join(",", _database.Client.Settings.Servers),
-                DatabaseName = _database.DatabaseNamespace.DatabaseName,
-                InterimSteps = new List<InterimMigrationResult>(),
-                Success = true
-            };
+                var currentDatabaseVersion = _status.GetVersion();
+                var migrations = _locator.GetMigrations(currentDatabaseVersion, version);
 
-            if (!migrations.Any())
-            {
-                result.CurrentVersion = currentDatabaseVersion;
-                return result;
-            }
-
-            if (_token.IsCancellationRequested)
-            {
-                _token.ThrowIfCancellationRequested();
-            }
-
-            var isUp = version > currentDatabaseVersion;
-
-            if (_schemeValidationNeeded)
-            {
-                var validator = new MongoSchemeValidator();
-                var validationResult = validator.Validate(migrations, isUp, _migrationProjectLocation, _database);
-                if (validationResult.FailedCollections.Any())
+                var result = new MigrationResult
                 {
-                    result.Success = false;
-                    var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
-                    throw new InvalidOperationException($"Some schema validation issues found in: {failedCollections}");
+                    ServerAdress = string.Join(",", _database.Client.Settings.Servers),
+                    DatabaseName = _database.DatabaseNamespace.DatabaseName,
+                    InterimSteps = new List<InterimMigrationResult>(),
+                    Success = true
+                };
+
+                if (!migrations.Any())
+                {
+                    result.CurrentVersion = currentDatabaseVersion;
+                    return result;
                 }
-            }
 
-            int counter = 0;
-
-            foreach (var m in migrations)
-            {
                 if (_token.IsCancellationRequested)
                 {
                     _token.ThrowIfCancellationRequested();
                 }
 
-                counter++;
-                var increment = new InterimMigrationResult();
+                var isUp = version > currentDatabaseVersion;
 
-                try
+                if (_schemeValidationNeeded)
                 {
-                    if (isUp)
-                        m.Up(_database);
-                    else
-                        m.Down(_database);
-
-                    var insertedMigration = _status.SaveMigration(m, isUp);
-
-                    increment.MigrationName = insertedMigration.Name;
-                    increment.TargetVersion = insertedMigration.Ver;
-                    increment.ServerAdress = result.ServerAdress;
-                    increment.DatabaseName = result.DatabaseName;
-                    increment.CurrentNumber = counter;
-                    increment.TotalCount = migrations.Count;
-                    result.InterimSteps.Add(increment);
-                }
-                catch (Exception ex)
-                {
-                    result.Success = false;
-                    throw new InvalidOperationException("Something went wrong during migration", ex);
-                }
-                finally
-                {
-                    if (_progressHandlers != null && _progressHandlers.Any())
+                    var validator = new MongoSchemeValidator();
+                    var validationResult = validator.Validate(migrations, isUp, _migrationProjectLocation, _database);
+                    if (validationResult.FailedCollections.Any())
                     {
-                        foreach (var action in _progressHandlers)
-                        {
-                            action(increment);
-                        }
+                        result.Success = false;
+                        var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
+                        throw new InvalidOperationException($"Some schema validation issues found in: {failedCollections}");
                     }
-                    result.CurrentVersion = _status.GetVersion();
+                }
+
+                int counter = 0;
+
+                foreach (var m in migrations)
+                {
+                    if (_token.IsCancellationRequested)
+                    {
+                        _token.ThrowIfCancellationRequested();
+                    }
+
+                    counter++;
+                    var increment = new InterimMigrationResult();
+
+                    try
+                    {
+                        if (isUp)
+                            m.Up(_database);
+                        else
+                            m.Down(_database);
+
+                        var insertedMigration = _status.SaveMigration(m, isUp);
+
+                        increment.MigrationName = insertedMigration.Name;
+                        increment.TargetVersion = insertedMigration.Ver;
+                        increment.ServerAdress = result.ServerAdress;
+                        increment.DatabaseName = result.DatabaseName;
+                        increment.CurrentNumber = counter;
+                        increment.TotalCount = migrations.Count;
+                        result.InterimSteps.Add(increment);
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Success = false;
+                        throw new InvalidOperationException("Something went wrong during migration", ex);
+                    }
+                    finally
+                    {
+                        if (_progressHandlers != null && _progressHandlers.Any())
+                        {
+                            foreach (var action in _progressHandlers)
+                            {
+                                action(increment);
+                            }
+                        }
+                        result.CurrentVersion = _status.GetVersion();
+                    }
+                }
+                return result;
+
+            }
+            finally
+            {
+                if (_sshClient != null && _sshClient.IsConnected)
+                {
+                    _sshClient.Dispose();
+                    _forwardedPortLocal.Dispose();
                 }
             }
-
-            return result;
         }
 
         public MigrationResult Run(Version version)

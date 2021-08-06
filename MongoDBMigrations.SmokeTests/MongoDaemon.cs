@@ -31,28 +31,31 @@ namespace MongoDBMigrations.SmokeTests
             Host = config["host"];
             Port = config["port"];
 
-            _dbFolder = Path.GetDirectoryName(config["dbFolder"]);
 
-            //Re-create db folder if it exists
-            if (Directory.Exists(_dbFolder))
+            if(bool.Parse(config["isLocal"]))
             {
-                Directory.Delete(_dbFolder, true);
-                Directory.CreateDirectory(_dbFolder);
+                _dbFolder = Path.GetDirectoryName(config["dbFolder"]);
+                //Re-create local db folder if it exists
+                if (Directory.Exists(_dbFolder))
+                {
+                    Directory.Delete(_dbFolder, true);
+                    Directory.CreateDirectory(_dbFolder);
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "mongod",
+                    Arguments = $"--dbpath {_dbFolder}  --storageEngine ephemeralForTest",
+                    UseShellExecute = false
+                };
+
+                process = new Process
+                {
+                    StartInfo = psi
+                };
+
+                process.Start();
             }
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = "mongod",
-                Arguments = $"--dbpath {_dbFolder}  --storageEngine ephemeralForTest",
-                UseShellExecute = false
-            };
-
-            process = new Process
-            {
-                StartInfo = psi
-            };
-
-            process.Start();
         }
 
         public void Dispose()
