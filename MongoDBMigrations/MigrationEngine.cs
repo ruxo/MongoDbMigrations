@@ -43,6 +43,27 @@ namespace MongoDBMigrations
             };
         }
 
+        public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
+        {
+            var database = mongoClient.GetDatabase(databaseName);
+            return new MigrationEngine
+            {
+                _database = database,
+                _locator = new MigrationManager(),
+                _status = new DatabaseManager(database, emulation)
+            };
+        }
+
+        public ILocator UseDatabase(IMongoDatabase mongoDatabase, MongoEmulationEnum emulation = MongoEmulationEnum.None)
+        {
+            return new MigrationEngine
+            {
+                _database = mongoDatabase,
+                _locator = new MigrationManager(),
+                _status = new DatabaseManager(mongoDatabase, emulation)
+            };
+        }
+
         private ILocator EstablishConnectionViaSsh(SshClient client, ServerAdressConfig mongoAdress, string databaseName)
         {
             client.Connect();
