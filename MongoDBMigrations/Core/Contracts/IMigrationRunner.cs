@@ -1,6 +1,7 @@
 ﻿using System;
 using MongoDBMigrations.Core;
 using System.Threading;
+using System.Security.Cryptography.X509Certificates;
 
 namespace MongoDBMigrations
 {

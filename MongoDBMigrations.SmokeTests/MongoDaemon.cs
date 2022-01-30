@@ -71,7 +71,7 @@ namespace MongoDBMigrations.SmokeTests
             string output = null;
 
 
-            var tlsSupport = "--sslAllowInvalidHostnames --tls --tlsCAFile /Users/arthur_osmokiesku/Downloads/rds-combined-ca-bundle.pem --username adminarthur --password Test1234";
+            var tlsSupport = "--ssl --sslCAFile /Users/arthur_osmokiesku/Git/SSH keys/rootCA.pem --sslPEMKeyFile /Users/arthur_osmokiesku/Git/SSH keys/mongodb.pem --host 40.127.203.104";
             var nonTlsSupport = $"--host {Host} --port {Port}";
             var psi = new ProcessStartInfo
             {

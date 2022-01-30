@@ -7,7 +7,7 @@
     "port": "27017",
     "isLocal": true
   },
-
+  
   "osx": {
     "dbFolder": "/Users/arthur_osmokiesku/data/db/",
     "connectionString": "mongodb://localhost:27017",
@@ -15,16 +15,16 @@
     "host": "localhost",
     "port": "27017",
     "isLocal": true
-  },
+  },  
   //OSX to Azure Ubuntu VM machine
-  /*
+/*
   "osx": {
-    "connectionString": "mongodb://40.112.76.155:27017",
+    "connectionString": "mongodb://40.127.203.104:27017",
     "databaseName": "test",
-    "host": "240.112.76.155",
+    "host": "40.127.203.104",
     "port": "27017",
     "isLocal": false
   }
-  */
+*/
 }
 

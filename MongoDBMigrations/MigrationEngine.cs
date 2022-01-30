@@ -10,12 +10,20 @@ using System.Threading.Tasks;
 using MongoDBMigrations.Document;
 using Renci.SshNet;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 
 namespace MongoDBMigrations
 {
     public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner
     {
+        private class SshConfig
+        {
+            public SshClient SshClient;
+            public ForwardedPortLocal ForwardedPortLocal;
+        }
+
         private const string LOCALHOST = "127.0.0.1";
+        private const int PORT = 3422;
 
         private IMongoDatabase _database;
         private MigrationManager _locator;
@@ -24,8 +32,9 @@ namespace MongoDBMigrations
         private string _migrationProjectLocation;
         private CancellationToken _token;
         private IList<Action<InterimMigrationResult>> _progressHandlers;
-        private SshClient _sshClient;
-        private ForwardedPortLocal _forwardedPortLocal;
+
+        private SshConfig _sshConfig;
+        private SslSettings _sslSettings;
 
         static MigrationEngine()
         {
@@ -34,7 +43,20 @@ namespace MongoDBMigrations
 
         public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
         {
-            var database = new MongoClient(connectionString).GetDatabase(databaseName);
+            var setting = MongoClientSettings.FromConnectionString(connectionString);
+
+            if(_sslSettings != null)
+            {
+                setting.SslSettings = _sslSettings;
+                setting.UseTls = true;
+            }
+
+            if(_sshConfig != null)
+            {
+                setting.Server = new MongoServerAddress(LOCALHOST, PORT);
+            }
+
+            var database = new MongoClient(setting).GetDatabase(databaseName);
             return new MigrationEngine
             {
                 _database = database,
@@ -43,34 +65,40 @@ namespace MongoDBMigrations
             };
         }
 
-        private ILocator EstablishConnectionViaSsh(SshClient client, ServerAdressConfig mongoAdress, string databaseName)
+        public MigrationEngine UseTls(X509Certificate2 certificate)
+        {
+            if (certificate == null)
+                throw new ArgumentNullException(nameof(certificate));
+
+            _sslSettings = new SslSettings
+            {
+                ClientCertificates = new[] { certificate },
+            };
+            return this;
+        }
+
+        private MigrationEngine EstablishConnectionViaSsh(SshClient client, ServerAdressConfig mongoAdress, string databaseName)
         {
             client.Connect();
-            var forwardedPortLocal = new ForwardedPortLocal(LOCALHOST, 3422, mongoAdress.Host, mongoAdress.Port);
+            var forwardedPortLocal = new ForwardedPortLocal(LOCALHOST, PORT, mongoAdress.Host, mongoAdress.Port);
             client.AddForwardedPort(forwardedPortLocal);
             forwardedPortLocal.Start();
 
-            var database = new MongoClient(new MongoClientSettings
+            _sshConfig = new SshConfig
             {
-                Server = new MongoServerAddress(LOCALHOST, 3422)
-            }).GetDatabase(databaseName);
-
-            return new MigrationEngine
-            {
-                _database = database,
-                _locator = new MigrationManager(),
-                _status = new DatabaseManager(database, MongoEmulationEnum.None),
-                _sshClient = client,
-                _forwardedPortLocal = forwardedPortLocal
+                SshClient = client,
+                ForwardedPortLocal = forwardedPortLocal
             };
+
+            return this;
         }
 
-        public ILocator UseDatabaseViaSSHTunnel(ServerAdressConfig sshAdress, string sshUser, string sshPassword, ServerAdressConfig mongoAdress, string databaseName)
+        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, string sshPassword, ServerAdressConfig mongoAdress, string databaseName)
         { 
             return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, sshPassword), mongoAdress, databaseName);
         }
 
-        public ILocator UseDatabaseViaSSHTunnel(ServerAdressConfig sshAdress, string sshUser, Stream privateKeyFileStream, ServerAdressConfig mongoAdress, string databaseName, string keyFilePassPhrase = null)
+        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, Stream privateKeyFileStream, ServerAdressConfig mongoAdress, string databaseName, string keyFilePassPhrase = null)
         {
             var keyFile = keyFilePassPhrase == null ? new PrivateKeyFile(privateKeyFileStream) : new PrivateKeyFile(privateKeyFileStream, keyFilePassPhrase);
             return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, new[] { keyFile }), mongoAdress, databaseName);
@@ -180,10 +208,10 @@ namespace MongoDBMigrations
             }
             finally
             {
-                if (_sshClient != null && _sshClient.IsConnected)
+                if (_sshConfig != null && _sshConfig.SshClient.IsConnected)
                 {
-                    _sshClient.Dispose();
-                    _forwardedPortLocal.Dispose();
+                    _sshConfig.SshClient.Dispose();
+                    _sshConfig.ForwardedPortLocal.Dispose();
                 }
             }
         }

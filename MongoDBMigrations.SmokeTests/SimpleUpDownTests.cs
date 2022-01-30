@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MongoDBMigrations.SmokeTests
@@ -78,13 +79,13 @@ namespace MongoDBMigrations.SmokeTests
         }
 
         [TestMethod]
-        public void SimpleMigrationViaSSHTunell()
+        public void SimpleMigrationViaSSHTunnel()
         {
             var target = new Version(1, 0, 0);
 
             using(var fs = File.OpenRead("/Users/arthur_osmokiesku/Git/SSH keys/vm-mongodb-server_key.pem"))
             {
-                var result = new MigrationEngine().UseDatabaseViaSSHTunnel(
+                var result = new MigrationEngine().UseSshTunnel(
                         new Document.ServerAdressConfig { Host = "40.112.76.155", Port = 22 },
                         "azureuser",
                         fs,
@@ -96,6 +97,22 @@ namespace MongoDBMigrations.SmokeTests
 
                 Assert.AreEqual(target, result.CurrentVersion);
             }
+        }
+
+        [TestMethod]
+        public void SimpleMigrationViaTls()
+        {
+            var target = new Version(1, 0, 0);
+
+            var cert = new X509Certificate2("/Users/arthur_osmokiesku/Git/SSH keys/mongodb.pem", "Test1234");
+            var result = new MigrationEngine()
+                .UseTls(cert)
+                .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
+                .UseAssemblyOfType<MongoDaemon>()
+                .UseSchemeValidation(false)
+                .Run(target);
+
+            Assert.AreEqual(target, result.CurrentVersion);
         }
     }
 }
