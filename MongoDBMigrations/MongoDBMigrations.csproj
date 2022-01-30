@@ -22,7 +22,7 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
     <FileVersion>2.1.0.0</FileVersion>
     <PackageLicenseFile>MIT.md</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <ReleaseVersion>2.1.0</ReleaseVersion>
+    <ReleaseVersion>2.2.0</ReleaseVersion>
     <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
 
@@ -32,8 +32,8 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.7.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.7.0" />
-    <PackageReference Include="MongoDB.Bson" Version="2.11.3" />
-    <PackageReference Include="MongoDB.Driver" Version="2.11.3" />
+    <PackageReference Include="MongoDB.Bson" Version="2.14.1" />
+    <PackageReference Include="MongoDB.Driver" Version="2.14.1" />
     <PackageReference Include="Buildalyzer.Workspaces" Version="2.6.0" />
     <PackageReference Include="SSH.NET" Version="2020.0.1" />
   </ItemGroup>
