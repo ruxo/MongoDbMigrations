@@ -20,10 +20,10 @@ namespace MongoDBMigrations
         {
             public SshClient SshClient;
             public ForwardedPortLocal ForwardedPortLocal;
+            public uint BoundPort;
         }
 
         private const string LOCALHOST = "127.0.0.1";
-        private const int PORT = 3422;
 
         private IMongoDatabase _database;
         private MigrationManager _locator;
@@ -53,7 +53,7 @@ namespace MongoDBMigrations
 
             if(_sshConfig != null)
             {
-                setting.Server = new MongoServerAddress(LOCALHOST, PORT);
+                setting.Server = new MongoServerAddress(LOCALHOST, checked((int)_sshConfig.BoundPort));
             }
 
             var database = new MongoClient(setting).GetDatabase(databaseName);
@@ -89,14 +89,15 @@ namespace MongoDBMigrations
         private MigrationEngine EstablishConnectionViaSsh(SshClient client, ServerAdressConfig mongoAdress)
         {
             client.Connect();
-            var forwardedPortLocal = new ForwardedPortLocal(LOCALHOST, PORT, mongoAdress.Host, mongoAdress.Port);
+            var forwardedPortLocal = new ForwardedPortLocal(LOCALHOST, mongoAdress.Host, mongoAdress.Port);
             client.AddForwardedPort(forwardedPortLocal);
             forwardedPortLocal.Start();
 
             _sshConfig = new SshConfig
             {
                 SshClient = client,
-                ForwardedPortLocal = forwardedPortLocal
+                ForwardedPortLocal = forwardedPortLocal,
+                BoundPort = forwardedPortLocal.BoundPort
             };
 
             return this;

@@ -2,7 +2,6 @@
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 namespace MongoDBMigrations.SmokeTests
 {
     [TestClass]
@@ -86,11 +85,11 @@ namespace MongoDBMigrations.SmokeTests
             using(var fs = File.OpenRead("/Users/arthur_osmokiesku/Git/SSH keys/vm-mongodb-server_key.pem"))
             {
                 var result = new MigrationEngine().UseSshTunnel(
-                        new Document.ServerAdressConfig { Host = "40.112.76.155", Port = 22 },
+                        new Document.ServerAdressConfig { Host = "40.127.203.104", Port = 22 },
                         "azureuser",
                         fs,
-                        new Document.ServerAdressConfig { Host = "127.0.0.1", Port = 27017 },
-                        "test")
+                        new Document.ServerAdressConfig { Host = "127.0.0.1", Port = 27017 })
+                    .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
                     .UseAssemblyOfType<MongoDaemon>()
                     .UseSchemeValidation(false)
                     .Run(target);
