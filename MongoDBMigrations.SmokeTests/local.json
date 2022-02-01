@@ -19,7 +19,7 @@
   //OSX to Azure Ubuntu VM machine
 
   "osx": {
-    "connectionString": "mongodb://127.0.0.1:27017",
+    "connectionString": "mongodb://40.127.203.104:27017",
     "databaseName": "test",
     "host": "40.127.203.104",
     "port": "27017",

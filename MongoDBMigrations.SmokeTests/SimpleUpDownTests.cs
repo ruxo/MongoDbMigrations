@@ -103,7 +103,7 @@ namespace MongoDBMigrations.SmokeTests
         {
             var target = new Version(1, 0, 0);
 
-            var cert = new X509Certificate2("/Users/arthur_osmokiesku/Git/SSH keys/mongodb.pem", "Test1234");
+            var cert = new X509Certificate2("/Users/arthur_osmokiesku/Git/SSH keys/test-client.pfx", "Test1234", X509KeyStorageFlags.Exportable);
             var result = new MigrationEngine()
                 .UseTls(cert)
                 .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)

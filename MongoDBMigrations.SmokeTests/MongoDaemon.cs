@@ -76,7 +76,7 @@ namespace MongoDBMigrations.SmokeTests
             var psi = new ProcessStartInfo
             {
                 FileName = "mongo",
-                Arguments = $"{nonTlsSupport} --quiet --eval \"{query}\"",
+                Arguments = $"{tlsSupport} --quiet --eval \"{query}\"",
                 CreateNoWindow = true,
                 RedirectStandardOutput = true
             };

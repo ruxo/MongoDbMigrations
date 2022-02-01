@@ -16,11 +16,12 @@ namespace MongoDBMigrations
 {
     public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner
     {
-        private class SshConfig
+        internal class SshConfig
         {
             public SshClient SshClient;
             public ForwardedPortLocal ForwardedPortLocal;
             public uint BoundPort;
+            public string BoundHost;
         }
 
         private const string LOCALHOST = "127.0.0.1";
@@ -44,45 +45,21 @@ namespace MongoDBMigrations
         public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
         {
             var setting = MongoClientSettings.FromConnectionString(connectionString);
-
-            if(_tlsSettings != null)
-            {
-                setting.SslSettings = _tlsSettings;
-                setting.UseTls = true;
-            }
-
-            if(_sshConfig != null)
-            {
-                setting.Server = new MongoServerAddress(LOCALHOST, checked((int)_sshConfig.BoundPort));
-            }
-
-            var database = new MongoClient(setting).GetDatabase(databaseName);
-            return new MigrationEngine
-            {
-                _database = database,
-                _locator = new MigrationManager(),
-                _status = new DatabaseManager(database, emulation)
-            };
+            var client = new MongoClient(setting);
+            return UseDatabase(client, databaseName, emulation);
         }
 
         public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
         {
-            var database = mongoClient.GetDatabase(databaseName);
+            var database = mongoClient
+                .SetTls(_tlsSettings)
+                .SetSsh(_sshConfig)
+                .GetDatabase(databaseName);
             return new MigrationEngine
             {
                 _database = database,
                 _locator = new MigrationManager(),
                 _status = new DatabaseManager(database, emulation)
-            };
-        }
-
-        public ILocator UseDatabase(IMongoDatabase mongoDatabase, MongoEmulationEnum emulation = MongoEmulationEnum.None)
-        {
-            return new MigrationEngine
-            {
-                _database = mongoDatabase,
-                _locator = new MigrationManager(),
-                _status = new DatabaseManager(mongoDatabase, emulation)
             };
         }
 
@@ -97,7 +74,8 @@ namespace MongoDBMigrations
             {
                 SshClient = client,
                 ForwardedPortLocal = forwardedPortLocal,
-                BoundPort = forwardedPortLocal.BoundPort
+                BoundPort = forwardedPortLocal.BoundPort,
+                BoundHost = LOCALHOST
             };
 
             return this;
