@@ -1,12 +1,13 @@
 image: microsoft/dotnet:2.1-sdk
 pipelines:
-  custom:
-    nuget:
-    - step:
-        caches:
-          - dotnetcore
-        script:
-          - dotnet restore
-          - dotnet build --configuration Release
-          - dotnet pack MongoDBMigrations/MongoDBMigrations.csproj --configuration ${BUILD_CONFIGURATION}
-          - dotnet nuget push MongoDBMigrations/bin/${BUILD_CONFIGURATION}/*.nupkg -k ${MYGET_NUGET_APIKEY} -s https://api.nuget.org/v3/index.json
+  branches:
+    '{master}':
+      nuget:
+      - step:
+          caches:
+            - dotnetcore
+          script:
+            - dotnet restore
+            - dotnet build --configuration Release
+            - dotnet pack MongoDBMigrations/MongoDBMigrations.csproj --configuration ${BUILD_CONFIGURATION}
+            - dotnet nuget push MongoDBMigrations/bin/${BUILD_CONFIGURATION}/*.nupkg -k ${MYGET_NUGET_APIKEY} -s https://api.nuget.org/v3/index.json
