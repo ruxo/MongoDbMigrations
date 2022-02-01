@@ -1,5 +1,13 @@
 # MongoDBMigrations
 
+### v2.2.0
+  - Added: SSH support
+  - Added: TLS/SSL support (experimental feature)
+  - Added: Custom specification collection name
+  - Added: New overloads for the method `UseDatabase`
+  - Changed: Upgrade to the newest version of .NET Mongo Driver
+  - Chnaged: Fixed [list of bugs](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/issues?version=v2.1.0)
+
 ### v2.1.0
   - Added: Azure CosmosDB support
   - Added: Increased C# Mongo Driver API coverage in schema validator feature
