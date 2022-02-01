@@ -2,8 +2,11 @@
 # MongoDBMigrations [![NuGet](https://img.shields.io/badge/nuget%20package-v2.2.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
 You can support me in the development of this useful library. I have big plans you can find them in todo below. I will appreciate pizza and beer;)
+
 [Just follow the link, and donate me any amount you want :)](https://send.monobank.ua/PRwBX6QKN)
+
 MongoDBMigrations using the official [MongoDB C# Driver](https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database. This library supports on-premis Mongo instances, Azure CosmosDB (MongoAPI) and AWS DocumentDB.
+
 No more downtime for schema-migrations. Just write small and simple `migrations`.
 
 We need migrations when:
@@ -31,11 +34,12 @@ We need migrations when:
 -  [See more...](https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/ReleaseNotes.md)
 
 ### Contribution
-Guys, unfortunately, I can't spend much time on this project, that is way ==since now you are able to create a pull request== and develop some features, which can be useful. I will review that requests and merge them. Please don't forget about unit tests :joy: I hope this step will speed up the evolution of this project. And just to set a vector below I specified a list of preferred features for the community:
-- [ ] Support replicas
-- [ ] Migration inside transsaction
-- [ ] Check the availability to work with Mongo Atlas
-- [ ] Extend functionality for scheme validator (base implementation is already in place)
+Guys, unfortunately, I can't spend much time on this project, that is way **since now you are able to create a pull request** and develop some features, which can be useful. I will review that requests and merge them. Please don't forget about unit tests :joy: I hope this step will speed up the evolution of this project. And just to set a vector below I specified a list of preferred features for the community:
+
+- Support replicas
+- Migration inside transsaction
+- Check the availability to work with Mongo Atlas
+- Extend functionality for scheme validator (base implementation is already in place)
 
 ### Next Feature/Todo
 - Diff calculation
@@ -92,7 +96,7 @@ public  void  Down(IMongoDatabase  database)
 
 ```
 
-#### It is really easy to use this library, just follow all these steps below (you should use ==one or more== methods from each step):
+#### It is really easy to use this library, just follow all these steps below (you should use *one or more* methods from each step):
 |Step #0|Step #1|Step #2|Step #3|Step #4|Step #5|
 |:---|:---|:---|:---|:---|:---|
 |Create an engine|Database, connection features|Migration classes| Validations|Hadling features|Excecution
