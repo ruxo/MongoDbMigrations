@@ -92,6 +92,13 @@ public  void  Down(IMongoDatabase  database)
 
 ```
 
+#### It is really easy to use this library, just follow all these steps below (you should use ==one or more== methods from each step):
+|Step #0|Step #1|Step #2|Step #3|Step #4|Step #5|
+|:---|:---|:---|:---|:---|:---|
+|Create an engine|Database, connection features|Migration classes| Validations|Hadling features|Excecution
+|`new MigrationEngine()`|`UseSshTunnel(...)` `UseTls(...)` `UseDatabase(...)`|`UseAssemblyOfType(...)` `UseAssemblyOfType<T>()` `UseAssembly(...)`|`UseSchemeValidation(...)`| `UseProgressHandler(...)` `UseCancelationToken(...)` `UseCustomSpecificationCollectionName(...)`|`Run()`|
+
+
 Use the following code for initialize `MigrationEngine` and start migration.
 
 ```csharp
