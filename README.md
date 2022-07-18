@@ -72,7 +72,7 @@ public  class  MyTestMigration : IMigration
 
 {
 
-public  Verstion  Version => new  Version(1,1,0);
+public MongoDBMigrations.Version Version => new MongoDBMigrations.Version(1, 1, 0);
 
 public  string  Name => "Some descrioption about this migration.";
 
