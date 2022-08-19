@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
 using Microsoft.Extensions.Configuration;
+using Mongo2Go;
 
 namespace MongoDBMigrations.SmokeTests
 {
@@ -16,25 +17,62 @@ namespace MongoDBMigrations.SmokeTests
         private readonly string _dbFolder;
         protected Process process;
 
+        public sealed class ConnectionInfo : IDisposable
+        {
+            readonly MongoDbRunner runner;
+            public ConnectionInfo(MongoDbRunner runner) {
+                this.runner = runner;
+            }
+
+            public string ConnectionString => runner.ConnectionString;
+            public string DatabaseName { get; init; }
+
+            public void Dispose() {
+                runner.Dispose();
+            }
+        }
+
+        // ReSharper disable InconsistentNaming
+        sealed class AppConfig
+        {
+            public string connectionString { get; init; }
+            public string databaseName { get; init; }
+            public string host { get; init; }
+            public string port { get; init; }
+            public bool isLocal { get; init; }
+            public string dbFolder { get; init; }
+        }
+        // ReSharper restore InconsistentNaming
+
+        public static ConnectionInfo Prepare() {
+            var dbFolder = Configuration.Value.isLocal ? Configuration.Value.dbFolder : null;
+            return new (MongoDbRunner.Start(dbFolder)){ DatabaseName = Configuration.Value.databaseName };
+        }
+
+        static readonly Lazy<AppConfig> Configuration = new(() => {
+            //This class is only for test/dev purposes. And supports only windows and osx platform as a development environment.
+            var section = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "osx";
+
+            return new ConfigurationBuilder()
+                  .AddJsonFile("local.json")
+                  .Build()
+                  .GetSection(section)
+                  .Get<AppConfig>();
+        });
+
         public MongoDaemon()
         {
-            //This class is only for test/dev purposes. And supports only windows and osx platform as a development environment.
-            string section = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "osx";
+            var config = Configuration.Value;
 
-            var config = new ConfigurationBuilder()
-                .AddJsonFile("local.json")
-                .Build()
-                .GetSection(section);
-
-            ConnectionString = config["connectionString"];
-            DatabaseName = config["databaseName"];
-            Host = config["host"];
-            Port = config["port"];
+            ConnectionString = config.connectionString;
+            DatabaseName = config.databaseName;
+            Host = config.host;
+            Port = config.port;
 
 
-            if(bool.Parse(config["isLocal"]))
+            if(config.isLocal)
             {
-                _dbFolder = Path.GetDirectoryName(config["dbFolder"]);
+                _dbFolder = Path.GetDirectoryName(config.dbFolder);
                 //Re-create local db folder if it exists
                 if (Directory.Exists(_dbFolder))
                 {
