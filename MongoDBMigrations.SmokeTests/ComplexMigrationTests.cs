@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Reflection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -25,7 +26,7 @@ namespace MongoDBMigrations.SmokeTests
             //Run up to the latest migration
             new MigrationEngine()
                 .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssemblyOfType<MongoDaemon>()
+                .UseAssembly(Assembly.GetExecutingAssembly())
                 .UseSchemeValidation(false)
                 .Run();
         }
@@ -42,7 +43,7 @@ namespace MongoDBMigrations.SmokeTests
             var downTarget = new Version("1.0.0");
             var downMigrationResult = new MigrationEngine()
                 .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssemblyOfType<MongoDaemon>()
+                .UseAssembly(Assembly.GetExecutingAssembly())
                 .UseSchemeValidation(false)
                 .Run(downTarget);
 
@@ -51,7 +52,7 @@ namespace MongoDBMigrations.SmokeTests
 
             var upMigrationResult = new MigrationEngine()
                 .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssemblyOfType<MongoDaemon>()
+                .UseAssembly(Assembly.GetExecutingAssembly())
                 .UseSchemeValidation(false)
                 .Run();
 

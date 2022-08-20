@@ -1,26 +1,26 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace MongoDBMigrations.SmokeTests
 {
     [TestClass]
     public class SchemaValidatorTests
     {
-        private readonly MongoDaemon _daemon;
-
-        public SchemaValidatorTests()
-        {
-            _daemon = new MongoDaemon();
-        }
+        MongoDaemon.ConnectionInfo _daemon;
+        IMongoCollection<BsonDocument> db;
 
         [TestInitialize]
-        public void SetUp()
-        {
-            //Drop all data from the database
-            _daemon.Execute("db.clients.drop()");
-            _daemon.Execute("db.getCollection('_migrations').drop()");
+        public void SetUp() {
+            _daemon = MongoDaemon.Prepare();
+            var database = new MongoClient(_daemon.ConnectionString).GetDatabase(_daemon.DatabaseName);
             //Create test collection with some data
-            _daemon.Execute("db.createCollection('clients')");
+            database.CreateCollection("clients");
+            db = database.GetCollection<BsonDocument>("clients");
         }
 
         [TestCleanup]
@@ -29,26 +29,39 @@ namespace MongoDBMigrations.SmokeTests
             _daemon.Dispose();
         }
 
+        static readonly Lazy<string> ProjectPath = new(() => {
+            var finder = new DirectoryInfo(Directory.GetCurrentDirectory());
+            FileInfo file;
+            while ((file = finder.EnumerateFiles("MongoDBMigrations.SmokeTests.csproj").FirstOrDefault()) is null)
+                finder = finder.Parent;
+            return file.FullName;
+        });
+
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
-        public void ValidatorShouldThrowExceptionBecauseSchemaIsInconsistant()
+        public void ValidatorShouldThrowExceptionBecauseSchemaIsInconsistent()
         {
-            _daemon.Execute("db.clients.insertMany([{name:'Alex', isActive:true, age: 17},{name:'Max'}])");
+            db.InsertMany(new[]{
+                new BsonDocument{ {"name", "Alex"}, {"isActive", true}},
+                new BsonDocument{ {"name", "Max"}}
+            });
             var target = new Version(1,0,0);
             new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssemblyOfType<MongoDaemon>()
-                .UseSchemeValidation(true, "/Users/arthur_osmokiesku/Git/mongodbmigrations/MongoDBMigrations.SmokeTests/MongoDBMigrations.SmokeTests.csproj")
+                .UseAssembly(Assembly.GetExecutingAssembly())
+                .UseSchemeValidation(true, ProjectPath.Value)
                 .Run(target);
         }
 
         [TestMethod]
-        public void ValidatorShouldPass()
-        {
-            _daemon.Execute("db.clients.insertMany([{name:'Alex', age: 17},{name:'Max', age: 25}])");
+        public void ValidatorShouldPass() {
+            db.InsertMany(new[]{
+                new BsonDocument{ { "name", "Alex" },{ "age", 17 } },
+                new BsonDocument{ { "name", "Max" },{ "age", 25 } }
+            });
             var target = new Version(1, 0, 0);
             var result = new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssemblyOfType<MongoDaemon>()
-                .UseSchemeValidation(true, "/Users/arthur_osmokiesku/Git/mongodbmigrations/MongoDBMigrations.SmokeTests/MongoDBMigrations.SmokeTests.csproj")
+                .UseAssembly(Assembly.GetExecutingAssembly())
+                .UseSchemeValidation(true, ProjectPath.Value)
                 .Run(target);
 
             Assert.IsTrue(result.InterimSteps.Count > 0);

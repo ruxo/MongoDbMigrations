@@ -1,28 +1,28 @@
-﻿using System;
+﻿using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace MongoDBMigrations.SmokeTests
 {
     [TestClass]
     public class DatabaseCheckerTests
     {
-        private readonly MongoDaemon _daemon;
-
-
-        public DatabaseCheckerTests()
-        {
-            _daemon = new MongoDaemon();
-        }
+        MongoDaemon.ConnectionInfo _daemon;
 
         [TestInitialize]
         public void SetUp()
         {
-            //Drop all data from the database
-            _daemon.Execute("db.clients.drop()");
-            _daemon.Execute("db.getCollection('_migrations').drop()");
+            _daemon = MongoDaemon.Prepare();
+            
+            var db = new MongoClient(_daemon.ConnectionString).GetDatabase(_daemon.DatabaseName);
             //Create test collection with some data
-            _daemon.Execute("db.createCollection('clients')");
-            _daemon.Execute("db.clients.insertMany([{name:'Alex', age: 17},{name:'Max', age: 25}])");
+            db.CreateCollection("clients");
+            db.GetCollection<BsonDocument>("clients")
+              .InsertMany(new[]{
+                   new BsonDocument{ {"name", "Alex"}, {"age", 17}},
+                   new BsonDocument{ {"name", "Max"}, {"age", 25}}
+               });
         }
 
         [TestCleanup]
@@ -44,7 +44,7 @@ namespace MongoDBMigrations.SmokeTests
             var target = new Version("1.1.0");
             new MigrationEngine()
                 .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssemblyOfType<MongoDaemon>()
+                .UseAssembly(Assembly.GetExecutingAssembly())
                 .UseSchemeValidation(false)
                 .Run(target);
 

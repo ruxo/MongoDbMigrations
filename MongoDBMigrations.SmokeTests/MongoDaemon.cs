@@ -1,22 +1,12 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.IO;
 using Microsoft.Extensions.Configuration;
 using Mongo2Go;
 
 namespace MongoDBMigrations.SmokeTests
 {
-    public class MongoDaemon : IDisposable
+    public static class MongoDaemon
     {
-        public string ConnectionString { get; private set; }
-        public string DatabaseName { get; private set; }
-        public string Host { get; private set; }
-        public string Port { get; private set; }
-
-        private readonly string _dbFolder;
-        protected Process process;
-
         public sealed class ConnectionInfo : IDisposable
         {
             readonly MongoDbRunner runner;
@@ -59,81 +49,5 @@ namespace MongoDBMigrations.SmokeTests
                   .GetSection(section)
                   .Get<AppConfig>();
         });
-
-        public MongoDaemon()
-        {
-            var config = Configuration.Value;
-
-            ConnectionString = config.connectionString;
-            DatabaseName = config.databaseName;
-            Host = config.host;
-            Port = config.port;
-
-
-            if(config.isLocal)
-            {
-                _dbFolder = Path.GetDirectoryName(config.dbFolder);
-                //Re-create local db folder if it exists
-                if (Directory.Exists(_dbFolder))
-                {
-                    Directory.Delete(_dbFolder, true);
-                    Directory.CreateDirectory(_dbFolder);
-                }
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "mongod",
-                    Arguments = $"--dbpath {_dbFolder}  --storageEngine ephemeralForTest",
-                    UseShellExecute = false
-                };
-
-                process = new Process
-                {
-                    StartInfo = psi
-                };
-
-                process.Start();
-            }
-        }
-
-        public void Dispose()
-        {
-            if (process != null && !process.HasExited)
-            {
-                process.Kill();
-            }
-        }
-
-        public virtual void Execute(string query)
-        {
-            string output = null;
-
-
-            var tlsSupport = "--ssl --sslCAFile /Users/arthur_osmokiesku/Git/SSH keys/rootCA.pem --sslPEMKeyFile /Users/arthur_osmokiesku/Git/SSH keys/mongodb.pem --host 40.127.203.104";
-            var nonTlsSupport = $"--host {Host} --port {Port}";
-            var psi = new ProcessStartInfo
-            {
-                FileName = "mongo",
-                Arguments = $"{tlsSupport} --quiet --eval \"{query}\"",
-                CreateNoWindow = true,
-                RedirectStandardOutput = true
-            };
-
-            var procQuery = new Process
-            {
-                StartInfo = psi
-            };
-            procQuery.Start();
-
-            while (!procQuery.StandardOutput.EndOfStream)
-            {
-
-                output += procQuery.StandardOutput.ReadLine() + Environment.NewLine;
-            }
-            if (!procQuery.WaitForExit(2000))
-            {
-                procQuery.Kill();
-            }
-        }
     }
 }
