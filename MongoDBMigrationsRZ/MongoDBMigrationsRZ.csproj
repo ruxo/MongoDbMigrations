@@ -32,7 +32,7 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
   <ItemGroup>
     <PackageReference Include="MongoDB.Bson" Version="2.22.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.22.0" />
-    <PackageReference Include="Buildalyzer.Workspaces" Version="3.2.8" />
+    <PackageReference Include="Buildalyzer.Workspaces" Version="5.0.1" />
     <PackageReference Include="SSH.NET" Version="2023.0.0" />
   </ItemGroup>
 
