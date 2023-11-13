@@ -5,24 +5,19 @@
     <ApplicationIcon />
     <OutputType>Library</OutputType>
     <StartupObject />
-    <Company>Arthur Osmokiesku</Company>
-    <Authors>Arthur Osmokiesku</Authors>
+    <Authors>Ruxo Zheng (Maintainer), Arthur Osmokiesku (Author)</Authors>
     <Copyright>Copyright ©2018-2021 Arthur Osmokiesku</Copyright>
-    <PackageProjectUrl>https://bitbucket.org/i_am_a_kernel/mongodbmigrations</PackageProjectUrl>
-    <RepositoryUrl>https://bitbucket.org/i_am_a_kernel/mongodbmigrations</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/ruxo/MongoDbMigrations</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ruxo/MongoDbMigrations</RepositoryUrl>
     <Description>MongoDbMigrations uses the official MongoDB C# Driver to migrate your documents in your mongo database via useful fluent API.
 Supports up and down migrations with cancelation and progress handling. Also, this library is able to check a schema of collections in your database during the migration run.
 This version supports on-premise Mongo database either Azure CosmosDB (with Mongo-like API) or even AWS DocumentDB. In addition you can use TLS and/or SHH tunnels in your migrations.
 PS1 script for integration with CI/CD pipelines provides inside of the repository</Description>
     <PackageTags>mongo mongodb migration schema-migration csharp dotnet schema migrator database-migration database .net fluent api ci/cd azure cosmos cosmosdb aws documentdb</PackageTags>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <Version>2.2.0</Version>
-    <PackageReleaseNotes>https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/ReleaseNotes.md</PackageReleaseNotes>
-    <AssemblyVersion>2.2.0.0</AssemblyVersion>
-    <FileVersion>2.2.0.0</FileVersion>
+    <PackageReleaseNotes>ReleaseNotes.md</PackageReleaseNotes>
     <PackageLicenseFile>MIT.md</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <ReleaseVersion>2.2.0</ReleaseVersion>
     <SynchReleaseVersion>false</SynchReleaseVersion>
     <RootNamespace>MongoDBMigrations</RootNamespace>
     <LangVersion>preview</LangVersion>
