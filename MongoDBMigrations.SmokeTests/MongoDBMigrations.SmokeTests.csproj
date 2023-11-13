@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MongoDBMigrations\MongoDBMigrations.csproj" />
+    <ProjectReference Include="..\MongoDBMigrationsRZ\MongoDBMigrationsRZ.csproj" />
   </ItemGroup>
 
   <ItemGroup>
