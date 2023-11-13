@@ -1,5 +1,7 @@
 
-# MongoDBMigrations [![NuGet](https://img.shields.io/badge/nuget%20package-v2.2.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+# MongoDBMigrations (RZ version) [![NuGet](https://img.shields.io/badge/nuget%20package-v2.2.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
+
+(This is a fan based 😅 version since the original author has not updated the library for awhile. The original repository is at https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/)
 
 You can support me in the development of this useful library. I have big plans you can find them in todo below. I will appreciate pizza and beer;)
 
