@@ -5,7 +5,7 @@ namespace MongoDBMigrations
     /// <summary>
     /// Semantic versioning
     /// </summary>
-    public struct Version : IComparable<Version>
+    public readonly struct Version : IComparable<Version>
     {
         private const char VERSION_SPLITTER = '.';
         private const int MAX_LENGTH = 3;
@@ -40,15 +40,9 @@ namespace MongoDBMigrations
             Revision = revision;
         }
 
-        public static implicit operator Version(string version)
-        {
-            return new Version(version);
-        }
+        public static implicit operator Version(string version) => new(version);
 
-        public static implicit operator string(Version version)
-        {
-            return version.ToString();
-        }
+        public static implicit operator string(Version version) => version.ToString();
 
         public override string ToString()
         {
@@ -96,21 +90,11 @@ namespace MongoDBMigrations
             return a == b || a > b;
         }
 
-        public bool Equals(Version other)
-        {
-            return other.Major == Major && other.Minor == Minor && other.Revision == Revision;
-        }
+        public bool Equals(Version other) => 
+            other.Major == Major && other.Minor == Minor && other.Revision == Revision;
 
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj))
-                return false;
-
-            if (obj.GetType() != typeof(Version))
-                return false;
-
-            return Equals((Version)obj);
-        }
+        public override bool Equals(object? obj) => 
+            obj is Version version && Equals(version);
 
         public override int GetHashCode()
         {
@@ -128,9 +112,7 @@ namespace MongoDBMigrations
         private static void ParseVersionPart(string value, out int target)
         {
             if (!int.TryParse(value, out target))
-            {
                 throw new InvalidVersionException(value);
-            }
         }
     }
 }

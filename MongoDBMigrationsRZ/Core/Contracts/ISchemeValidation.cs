@@ -2,6 +2,6 @@
 {
     public interface ISchemeValidation
     {
-        IMigrationRunner UseSchemeValidation(bool enabled, string migrationProjectLocation = null);
+        IMigrationRunner UseSchemeValidation(bool enabled, string? migrationProjectLocation = null);
     }
 }

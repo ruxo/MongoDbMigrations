@@ -46,7 +46,7 @@ namespace MongoDBMigrations.SmokeTests
             return new ConfigurationBuilder()
                   .AddJsonFile("local.json")
                   .Build()
-                  .GetSection(section)
+                  .GetRequiredSection(section)
                   .Get<AppConfig>();
         });
     }

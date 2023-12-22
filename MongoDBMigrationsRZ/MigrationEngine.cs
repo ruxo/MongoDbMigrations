@@ -6,7 +6,6 @@ using MongoDBMigrations.Core;
 using System.Reflection;
 using System.Threading;
 using System.Linq;
-using System.Threading.Tasks;
 using MongoDBMigrations.Document;
 using Renci.SshNet;
 using System.IO;
@@ -31,7 +30,7 @@ namespace MongoDBMigrations
         private DatabaseManager _status;
         private bool _schemeValidationNeeded;
         private string _migrationProjectLocation;
-        private CancellationToken _token;
+        private CancellationToken _token = CancellationToken.None;
         private IList<Action<InterimMigrationResult>> _progressHandlers;
 
         private SshConfig _sshConfig;
@@ -93,15 +92,15 @@ namespace MongoDBMigrations
             return this;
         }
 
-        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, string sshPassword, ServerAdressConfig mongoAdress)
+        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, string sshPassword, ServerAdressConfig mongoAddress)
         { 
-            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, sshPassword), mongoAdress);
+            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, sshPassword), mongoAddress);
         }
 
-        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, Stream privateKeyFileStream, ServerAdressConfig mongoAdress, string keyFilePassPhrase = null)
+        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, Stream privateKeyFileStream, ServerAdressConfig mongoAddress, string? keyFilePassPhrase = null)
         {
             var keyFile = keyFilePassPhrase == null ? new PrivateKeyFile(privateKeyFileStream) : new PrivateKeyFile(privateKeyFileStream, keyFilePassPhrase);
-            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, new[] { keyFile }), mongoAdress);
+            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, new[] { keyFile }), mongoAddress);
         }
 
         public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action)
@@ -216,29 +215,8 @@ namespace MongoDBMigrations
             }
         }
 
-        public MigrationResult Run(Version version)
-        {
-            if (object.ReferenceEquals(version, null))
-            {
-                version = this._locator.GetNewestLocalVersion();
-            }
-
-            if (_token == null || !_token.CanBeCanceled)
-            {
-                return RunInternal(version);
-            }
-            else
-            {
-                return Task.Factory.StartNew(() => RunInternal(version), _token).ConfigureAwait(false).GetAwaiter()
-                    .GetResult();
-            }
-        }
-
-        public MigrationResult Run()
-        {
-            var targetVersion = this._locator.GetNewestLocalVersion();
-            return Run(targetVersion);
-        }
+        public MigrationResult Run(Version? version) => 
+            RunInternal(version ?? _locator.GetNewestLocalVersion());
 
         public ISchemeValidation UseAssembly(Assembly assembly)
         {
@@ -264,16 +242,13 @@ namespace MongoDBMigrations
 
         public IMigrationRunner UseCancelationToken(CancellationToken token)
         {
-            if (token == null)
-                throw new ArgumentNullException(nameof(token));
-
             if (!token.CanBeCanceled)
-                throw new ArgumentException($"Invalid token or it's canceled already.", nameof(token));
+                throw new ArgumentException("Invalid token or it's canceled already.", nameof(token));
             this._token = token;
             return this;
         }
 
-        public IMigrationRunner UseSchemeValidation(bool enabled, string location)
+        public IMigrationRunner UseSchemeValidation(bool enabled, string? location)
         {
             this._schemeValidationNeeded = enabled;
             if (enabled)
@@ -290,7 +265,6 @@ namespace MongoDBMigrations
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
             _status.SpecCollectionName = name;
-
 
             return this;
         }

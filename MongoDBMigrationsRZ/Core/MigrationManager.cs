@@ -68,7 +68,7 @@ namespace MongoDBMigrations
 
             var currentAssembly = Assembly.GetExecutingAssembly();
             Assembly trueCallingAssembly = stackFrames
-                .FirstOrDefault(a => a.GetMethod().DeclaringType.Assembly != currentAssembly).GetMethod().DeclaringType.Assembly;
+                .First(a => a.GetMethod()!.DeclaringType!.Assembly != currentAssembly).GetMethod()!.DeclaringType!.Assembly;
 
             if (trueCallingAssembly == null)
                 throw new InvalidOperationException("Can't find assembly with migrations. Try use LookInAssemblyOfType() method before.");
