@@ -11,6 +11,7 @@ This library is published in Nuget as https://www.nuget.org/packages/MongoDBMigr
 
 * As .NET 7 has been end of support, I remove .NET 6 and .NET 7 support from this library.
 * (Minor) Correct name of `DatabaseOutdatedException`
+* (Minor) many typo correction in parameter names
 
 ----
 

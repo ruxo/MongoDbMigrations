@@ -5,7 +5,7 @@ namespace MongoDBMigrations.Core
 {
     internal static class IMongoClientExtensions
     {
-        public static IMongoClient SetTls(this IMongoClient instance, SslSettings config)
+        public static IMongoClient SetTls(this IMongoClient instance, SslSettings? config)
         {
             if (config != null)
             {

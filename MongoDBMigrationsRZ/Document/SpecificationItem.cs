@@ -19,7 +19,9 @@ public class SpecificationItem
     [BsonElement("d")]
     public bool isUp { get; set; }
 
-    [BsonElement("applied")]
+    [BsonElement(ApplyDateTimeField)]
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc, Representation = BsonType.DateTime)]
     public DateTime ApplyingDateTime {get;set;}
+
+    public const string ApplyDateTimeField = "applied";
 }

@@ -17,14 +17,14 @@ namespace MongoDBMigrations
         readonly List<MigrationEnginePlugin> _plugins = new();
         readonly List<Action<InterimMigrationResult>> _progressHandlers = new();
 
-        private IMongoDatabase _database;
-        private MigrationManager _locator;
-        private DatabaseManager _status;
+        private IMongoDatabase _database = default!;
+        private MigrationManager _locator = default!;
+        private DatabaseManager _status = default!;
         private bool _schemeValidationNeeded;
-        private string _migrationProjectLocation;
+        private string _migrationProjectLocation = string.Empty;
         private CancellationToken _token = CancellationToken.None;
 
-        private SslSettings _tlsSettings;
+        private SslSettings? _tlsSettings;
 
         static MigrationEngine()
         {
