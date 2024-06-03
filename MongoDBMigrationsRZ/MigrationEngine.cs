@@ -7,34 +7,24 @@ using System.Reflection;
 using System.Threading;
 using System.Linq;
 using MongoDBMigrations.Document;
-using Renci.SshNet;
-using System.IO;
 using System.Security.Cryptography.X509Certificates;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace MongoDBMigrations
 {
-    public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner
+    public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner, IMigrationEnginePluginSupport
     {
-        internal class SshConfig
-        {
-            public SshClient SshClient;
-            public ForwardedPortLocal ForwardedPortLocal;
-            public uint BoundPort;
-            public string BoundHost;
-        }
+        readonly List<MigrationEnginePlugin> _plugins = new();
+        readonly List<Action<InterimMigrationResult>> _progressHandlers = new();
 
-        private const string LOCALHOST = "127.0.0.1";
-
-        private IMongoDatabase _database;
-        private MigrationManager _locator;
-        private DatabaseManager _status;
+        private IMongoDatabase _database = default!;
+        private MigrationManager _locator = default!;
+        private DatabaseManager _status = default!;
         private bool _schemeValidationNeeded;
-        private string _migrationProjectLocation;
+        private string _migrationProjectLocation = string.Empty;
         private CancellationToken _token = CancellationToken.None;
-        private IList<Action<InterimMigrationResult>> _progressHandlers;
 
-        private SshConfig _sshConfig;
-        private SslSettings _tlsSettings;
+        private SslSettings? _tlsSettings;
 
         static MigrationEngine()
         {
@@ -48,36 +38,15 @@ namespace MongoDBMigrations
             return UseDatabase(client, databaseName, emulation);
         }
 
-        public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
-        {
-            var database = mongoClient
-                .SetTls(_tlsSettings)
-                .SetSsh(_sshConfig)
-                .GetDatabase(databaseName);
+        public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None) {
+            var database = _plugins.Aggregate(mongoClient.SetTls(_tlsSettings), (client, plugin) => plugin.SetupMongoClient(client))
+                                   .GetDatabase(databaseName);
             return new MigrationEngine
             {
                 _database = database,
                 _locator = new MigrationManager(),
                 _status = new DatabaseManager(database, emulation)
             };
-        }
-
-        private MigrationEngine EstablishConnectionViaSsh(SshClient client, ServerAdressConfig mongoAdress)
-        {
-            client.Connect();
-            var forwardedPortLocal = new ForwardedPortLocal(LOCALHOST, mongoAdress.Host, mongoAdress.Port);
-            client.AddForwardedPort(forwardedPortLocal);
-            forwardedPortLocal.Start();
-
-            _sshConfig = new SshConfig
-            {
-                SshClient = client,
-                ForwardedPortLocal = forwardedPortLocal,
-                BoundPort = forwardedPortLocal.BoundPort,
-                BoundHost = LOCALHOST
-            };
-
-            return this;
         }
 
         public MigrationEngine UseTls(X509Certificate2 certificate)
@@ -92,24 +61,10 @@ namespace MongoDBMigrations
             return this;
         }
 
-        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, string sshPassword, ServerAdressConfig mongoAddress)
-        { 
-            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, sshPassword), mongoAddress);
-        }
-
-        public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, Stream privateKeyFileStream, ServerAdressConfig mongoAddress, string? keyFilePassPhrase = null)
-        {
-            var keyFile = keyFilePassPhrase == null ? new PrivateKeyFile(privateKeyFileStream) : new PrivateKeyFile(privateKeyFileStream, keyFilePassPhrase);
-            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, new[] { keyFile }), mongoAddress);
-        }
-
         public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-
-            if (this._progressHandlers == null)
-                this._progressHandlers = new List<Action<InterimMigrationResult>>();
 
             this._progressHandlers.Add(action);
 
@@ -118,38 +73,32 @@ namespace MongoDBMigrations
 
         private MigrationResult RunInternal(Version version)
         {
-            try
-            {
+            try{
                 var currentDatabaseVersion = _status.GetVersion();
                 var migrations = _locator.GetMigrations(currentDatabaseVersion, version);
 
-                var result = new MigrationResult
-                {
+                var result = new MigrationResult {
                     ServerAdress = string.Join(",", _database.Client.Settings.Servers),
                     DatabaseName = _database.DatabaseNamespace.DatabaseName,
                     InterimSteps = new List<InterimMigrationResult>(),
                     Success = true
                 };
 
-                if (!migrations.Any())
-                {
+                if (!migrations.Any()){
                     result.CurrentVersion = currentDatabaseVersion;
                     return result;
                 }
 
-                if (_token.IsCancellationRequested)
-                {
+                if (_token.IsCancellationRequested){
                     _token.ThrowIfCancellationRequested();
                 }
 
                 var isUp = version > currentDatabaseVersion;
 
-                if (_schemeValidationNeeded)
-                {
+                if (_schemeValidationNeeded){
                     var validator = new MongoSchemeValidator();
                     var validationResult = validator.Validate(migrations, isUp, _migrationProjectLocation, _database);
-                    if (validationResult.FailedCollections.Any())
-                    {
+                    if (validationResult.FailedCollections.Any()){
                         result.Success = false;
                         var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
                         throw new InvalidOperationException($"Some schema validation issues found in: {failedCollections}");
@@ -158,18 +107,15 @@ namespace MongoDBMigrations
 
                 int counter = 0;
 
-                foreach (var m in migrations)
-                {
-                    if (_token.IsCancellationRequested)
-                    {
+                foreach (var m in migrations){
+                    if (_token.IsCancellationRequested){
                         _token.ThrowIfCancellationRequested();
                     }
 
                     counter++;
                     var increment = new InterimMigrationResult();
 
-                    try
-                    {
+                    try{
                         if (isUp)
                             m.Up(_database);
                         else
@@ -185,37 +131,31 @@ namespace MongoDBMigrations
                         increment.TotalCount = migrations.Count;
                         result.InterimSteps.Add(increment);
                     }
-                    catch (Exception ex)
-                    {
+                    catch (Exception ex){
                         result.Success = false;
                         throw new InvalidOperationException("Something went wrong during migration", ex);
                     }
-                    finally
-                    {
-                        if (_progressHandlers != null && _progressHandlers.Any())
-                        {
-                            foreach (var action in _progressHandlers)
-                            {
-                                action(increment);
-                            }
-                        }
+                    finally{
+                        foreach (var action in _progressHandlers)
+                            action(increment);
                         result.CurrentVersion = _status.GetVersion();
                     }
                 }
                 return result;
 
             }
-            finally
-            {
-                if (_sshConfig != null && _sshConfig.SshClient.IsConnected)
-                {
-                    _sshConfig.SshClient.Dispose();
-                    _sshConfig.ForwardedPortLocal.Dispose();
-                }
+            finally{
+                foreach (var plugin in _plugins)
+                    try{
+                        plugin.Dispose();
+                    }
+                    catch (Exception e){
+                        Console.WriteLine($"Dispose plugin {plugin.GetType().FullName} error: {e}");
+                    }
             }
         }
 
-        public MigrationResult Run(Version? version) => 
+        public MigrationResult Run(Version? version) =>
             RunInternal(version ?? _locator.GetNewestLocalVersion());
 
         public ISchemeValidation UseAssembly(Assembly assembly)
@@ -266,6 +206,11 @@ namespace MongoDBMigrations
                 throw new ArgumentNullException(nameof(name));
             _status.SpecCollectionName = name;
 
+            return this;
+        }
+
+        IMigrationEnginePluginSupport IMigrationEnginePluginSupport.AddPlugin(MigrationEnginePlugin plugin) {
+            _plugins.Add(plugin);
             return this;
         }
     }

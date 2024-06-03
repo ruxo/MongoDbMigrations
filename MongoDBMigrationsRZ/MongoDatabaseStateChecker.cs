@@ -10,7 +10,7 @@ namespace MongoDBMigrations
         {
             var (dbVersion, availableVersion) = GetCurrentVersions(connectionString, databaseName, migrationAssembly, emulation);
             if (availableVersion > dbVersion)
-                throw new DatabaseOutdatedExcetion(dbVersion, availableVersion);
+                throw new DatabaseOutdatedException(dbVersion, availableVersion);
         }
 
         public static bool IsDatabaseOutdated(string connectionString, string databaseName, Assembly? migrationAssembly = null, MongoEmulationEnum emulation = MongoEmulationEnum.None)

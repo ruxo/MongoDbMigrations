@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using MongoDBMigrations.Document;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 
@@ -17,11 +18,10 @@ namespace MongoDBMigrations.Core
     {
 
         /// <summary>
-        /// List of method names in which the collection name is used. 
+        /// List of method names in which the collection name is used.
         /// They were taken from the IMongoDatabase interface.
         /// </summary>
-        public List<string> MethodMarkers { get; } = new List<string>
-        {
+        public List<string> MethodMarkers { get; } = new() {
             "GetCollection", //IMongoDatabase
             "CreateCollection",
             "CreateCollectionAsync",
@@ -80,14 +80,17 @@ namespace MongoDBMigrations.Core
             var project = workspace.CurrentSolution.Projects.Single(prj => prj.FilePath == pathToMigrationProj);
 
             var compilation = project.GetCompilationAsync().Result;
+            Debug.Assert(compilation is not null);
 
             var finder = new MigrationMethodsFinder(allowedMigrationNames, methodName);
             var collectionNames = new List<string>();
             foreach (var file in project.Documents)
             {
                 var tree = file.GetSyntaxTreeAsync().Result;
+                Debug.Assert(tree is not null);
+
                 var methods = finder.FindMethods(tree.GetRoot());
-                if (methods.Any())
+                if (methods.Count != 0)
                 {
                     var model = compilation.GetSemanticModel(tree);
                     collectionNames.AddRange(methods.SelectMany(item => FindCollectionNames(model, item)));
@@ -107,7 +110,7 @@ namespace MongoDBMigrations.Core
             var arguments = node
                 .DescendantNodes()
                 .OfType<InvocationExpressionSyntax>()
-                .Where(sn => MethodMarkers.Contains(semanticModel.GetSymbolInfo(sn).Symbol.Name))
+                .Where(sn => MethodMarkers.Contains(semanticModel.GetSymbolInfo(sn).Symbol!.Name))
                 .SelectMany(sn => sn
                     .DescendantNodes()
                     .OfType<LiteralExpressionSyntax>()

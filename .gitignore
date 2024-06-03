@@ -5,6 +5,7 @@ project.lock.json
 *.pyc
 nupkg/
 .idea/
+publish/
 
 # Visual Studio Code
 .vscode

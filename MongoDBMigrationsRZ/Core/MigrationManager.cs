@@ -12,11 +12,7 @@ namespace MongoDBMigrations
     /// </summary>
     internal class MigrationManager
     {
-        private Assembly _assembly;
-
-        public MigrationManager()
-        {
-        }
+        private Assembly? _assembly;
 
         /// <summary>
         /// Sets assembly
@@ -51,7 +47,7 @@ namespace MongoDBMigrations
         }
 
         /// <summary>
-        /// Find all migrations in executing assembly or assembly whitch found by <LookInAssemblyOfType> method.
+        /// Find all migrations in executing assembly or assembly whitch found by &lt;LookInAssemblyOfType&gt; method.
         /// </summary>
         /// <returns>List of all found migrations.</returns>
         public List<IMigration> GetAllMigrations()
@@ -102,43 +98,44 @@ namespace MongoDBMigrations
             }
 
             if (!result.Any())
-                throw new MigrationNotFoundException(assembly.FullName, null);
+                throw new MigrationNotFoundException(assembly.FullName!);
 
             return result;
         }
 
         /// <summary>
-        /// Find all migrations in executing assembly or assembly whitch found by <LookInAssemblyOfType> method.
+        /// Find all migrations in executing assembly or assembly whitch found by &lt;LookInAssemblyOfType&gt; method.
         /// Between current and target versions
         /// </summary>
         /// <param name="currentVersion">Version of database.</param>
-        /// <param name="targetVerstion">Target version for migrating.</param>
+        /// <param name="targetVersion">Target version for migrating.</param>
         /// <returns>List of all found migrations.</returns>
-        public List<IMigration> GetMigrations(Version currentVersion, Version targetVerstion)
+        public List<IMigration> GetMigrations(Version currentVersion, Version targetVersion)
         {
+            Debug.Assert(_assembly is not null);
             var migrations = GetAllMigrations();
-            if (migrations.All(x => x.Version != targetVerstion) && targetVerstion != Version.Zero())
+            if (migrations.All(x => x.Version != targetVersion) && targetVersion != Version.Zero())
             {
-                throw new MigrationNotFoundException(_assembly.FullName, null);
+                throw new MigrationNotFoundException(_assembly.FullName!);
             }
 
-            if (targetVerstion > currentVersion)
+            if (targetVersion > currentVersion)
             {
                 migrations = migrations
-                    .Where(x => x.Version > currentVersion && x.Version <= targetVerstion)
+                    .Where(x => x.Version > currentVersion && x.Version <= targetVersion)
                     .OrderBy(x => x.Version).ToList();
             }
-            else if (targetVerstion < currentVersion)
+            else if (targetVersion < currentVersion)
             {
                 migrations = migrations
-                    .Where(x => x.Version <= currentVersion && x.Version > targetVerstion)
+                    .Where(x => x.Version <= currentVersion && x.Version > targetVersion)
                     .OrderByDescending(x => x.Version).ToList();
             }
             else
                 return Enumerable.Empty<IMigration>().ToList();
 
             if (!migrations.Any())
-                throw new MigrationNotFoundException(_assembly.FullName, null);
+                throw new MigrationNotFoundException(_assembly.FullName!);
 
             return migrations;
         }

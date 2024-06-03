@@ -53,7 +53,7 @@ namespace MongoDBMigrations.SmokeTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(DatabaseOutdatedExcetion))]
+        [ExpectedException(typeof(DatabaseOutdatedException))]
         public void ThrowIfDatabaseOutdatedShouldThrowException()
         {
             MongoDatabaseStateChecker.ThrowIfDatabaseOutdated(_daemon.ConnectionString, _daemon.DatabaseName, typeof(DatabaseCheckerTests).Assembly);
