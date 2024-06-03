@@ -14,10 +14,6 @@ namespace MongoDBMigrations
     {
         private Assembly _assembly;
 
-        public MigrationManager()
-        {
-        }
-
         /// <summary>
         /// Sets assembly
         /// </summary>

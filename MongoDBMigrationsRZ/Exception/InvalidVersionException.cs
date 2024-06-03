@@ -1,11 +1,8 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
-namespace MongoDBMigrations
-{
-    public class InvalidVersionException : Exception
-    {
-        public InvalidVersionException(string version)
-            : base(string.Format("Invalid value: {0}", version))
-        {}
-    }
-}
+// ReSharper disable once CheckNamespace
+namespace MongoDBMigrations;
+
+[ExcludeFromCodeCoverage]
+public class InvalidVersionException(string version) : Exception($"Invalid value: {version}");

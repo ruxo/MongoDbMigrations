@@ -1,11 +1,9 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
-namespace MongoDBMigrations
-{
-    public class MigrationNotFoundException : Exception
-    {
-        public MigrationNotFoundException(string assemblyName, Exception innerException)
-            : base(string.Format("Migrations are not found in assembly {0}", assemblyName), innerException)
-        {}
-    }
-}
+// ReSharper disable once CheckNamespace
+namespace MongoDBMigrations;
+
+[ExcludeFromCodeCoverage]
+public class MigrationNotFoundException(string assemblyName, Exception innerException)
+    : Exception($"Migrations are not found in assembly {assemblyName}", innerException);
