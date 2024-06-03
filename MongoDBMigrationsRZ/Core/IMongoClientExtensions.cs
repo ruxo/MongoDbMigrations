@@ -15,14 +15,5 @@ namespace MongoDBMigrations.Core
 
             return instance;
         }
-
-        public static IMongoClient SetSsh(this IMongoClient instance, MigrationEngine.SshConfig? config)
-        {
-            if(config != null)
-            {
-                instance.Settings.Server = new MongoServerAddress(config.BoundHost, checked((int)config.BoundPort));
-            }
-            return instance;
-        }
     }
 }

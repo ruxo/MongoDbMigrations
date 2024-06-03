@@ -13,7 +13,6 @@ Supports up and down migrations with cancelation and progress handling. Also, th
 This version supports on-premise Mongo database either Azure CosmosDB (with Mongo-like API) or even AWS DocumentDB. In addition you can use TLS and/or SHH tunnels in your migrations.
 PS1 script for integration with CI/CD pipelines provides inside of the repository</Description>
     <PackageTags>mongo mongodb migration schema-migration csharp dotnet schema migrator database-migration database .net fluent api ci/cd azure cosmos cosmosdb aws documentdb</PackageTags>
-    <PackageLicenseUrl></PackageLicenseUrl>
     <PackageReleaseNotes>ReleaseNotes.md</PackageReleaseNotes>
     <PackageLicenseFile>MIT.md</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
@@ -32,20 +31,13 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
     <PackageReference Include="MongoDB.Bson" Version="2.25.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.25.0" />
     <PackageReference Include="Buildalyzer.Workspaces" Version="7.0.1" />
-    <PackageReference Include="SSH.NET" Version="2024.0.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.6" />
     <PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.1" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="SSH.NET" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\MIT.md">
       <Pack>True</Pack>
-      <PackagePath></PackagePath>
     </None>
   </ItemGroup>
 
