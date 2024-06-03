@@ -1,7 +1,9 @@
-﻿using MongoDB.Driver;
+﻿using System.Diagnostics.CodeAnalysis;
+using MongoDB.Driver;
 
 namespace MongoDBMigrations;
 
+[ExcludeFromCodeCoverage(Justification="Involve setting up SSH client and not much logic here")]
 public sealed class DatabaseSshTunnelPlugin(MigrationEngineExtensions.SshConfig sshConfig) : MigrationEnginePlugin
 {
     public override IMongoClient SetupMongoClient(IMongoClient client) {
@@ -10,9 +12,10 @@ public sealed class DatabaseSshTunnelPlugin(MigrationEngineExtensions.SshConfig 
     }
 
     protected override void Dispose(bool disposing) {
-        if (sshConfig is { SshClient.IsConnected: true }){
+        if (disposing){
+            if (sshConfig is { SshClient.IsConnected: true })
+                sshConfig.ForwardedPortLocal.Dispose();  // 🤔 not sure if this is really needed since we are disposing the SshClient
             sshConfig.SshClient.Dispose();
-            sshConfig.ForwardedPortLocal.Dispose();
         }
         base.Dispose(disposing);
     }

@@ -1,9 +1,11 @@
-﻿using MongoDBMigrations.Document;
+﻿using System.Diagnostics.CodeAnalysis;
+using MongoDBMigrations.Document;
 using Renci.SshNet;
 // ReSharper disable UnusedMember.Global
 
 namespace MongoDBMigrations;
 
+[ExcludeFromCodeCoverage(Justification="Involve setting up SSH client and not much logic here")]
 public static class MigrationEngineExtensions
 {
     public readonly record struct SshConfig(SshClient SshClient, ForwardedPortLocal ForwardedPortLocal, int BoundPort, string BoundHost);

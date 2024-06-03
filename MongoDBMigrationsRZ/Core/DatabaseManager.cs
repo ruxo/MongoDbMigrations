@@ -1,7 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
-using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoDBMigrations.Document;
 
@@ -24,10 +22,7 @@ public class DatabaseManager
             if (!string.IsNullOrEmpty(value))
                 _specCollectionName = value;
         }
-        get
-        {
-            return string.IsNullOrEmpty(_specCollectionName) ? SPECIFICATION_COLLECTION_DEFAULT_NAME : _specCollectionName;
-        }
+        get => string.IsNullOrEmpty(_specCollectionName) ? SPECIFICATION_COLLECTION_DEFAULT_NAME : _specCollectionName;
     }
 
     #region Compatibility Checks
@@ -49,13 +44,9 @@ public class DatabaseManager
             return true;
         }
 
-        //Check that index exisist and return true, otherwise false.
+        //Check that index exists and return true, otherwise false.
         var indexes = _database.GetCollection<SpecificationItem>(SpecCollectionName).Indexes.List().ToList();
-        var targetIndex = typeof(SpecificationItem)
-                         .GetProperty(nameof(SpecificationItem.ApplyingDateTime))!
-                         .GetCustomAttribute<BsonElementAttribute>()!
-                         .ElementName;
-        return indexes.Any(x => x.GetValue("name").ToString()!.StartsWith(targetIndex));
+        return indexes.Any(x => x.GetValue("name").ToString()!.StartsWith(SpecificationItem.ApplyDateTimeField));
     }
 
     #endregion
