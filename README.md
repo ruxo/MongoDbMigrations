@@ -1,7 +1,21 @@
 
 # MongoDBMigrations (RZ version) [![NuGet](https://img.shields.io/badge/nuget%20package-v2.2.0-brightgreen.svg)](https://www.nuget.org/packages/MongoDBMigrations/)
 
-(This is a fan based 😅 version since the original author has not updated the library for awhile. The original repository is at https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/)
+(This is a fan based 😅 version since the original author has not updated/published the library for awhile. The original repository is at https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/)
+
+This library is published in Nuget as https://www.nuget.org/packages/MongoDBMigrationsRZ.
+
+# Changes
+
+## 1.1.0
+
+* As .NET 7 has been end of support, I remove .NET 6 and .NET 7 support from this library.
+
+----
+
+Below is the **original** README.md file content.
+
+----
 
 You can support me in the development of this useful library. I have big plans you can find them in todo below. I will appreciate pizza and beer;)
 
@@ -23,7 +37,6 @@ We need migrations when:
 
 **5.** Removing collections / data
 
-  
 
 ### New Features!
 - Added: SSH support
