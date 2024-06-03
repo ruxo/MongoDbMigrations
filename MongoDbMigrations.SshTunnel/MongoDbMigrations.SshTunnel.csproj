@@ -8,12 +8,23 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RepositoryUrl>https://github.com/ruxo/MongoDbMigrations</RepositoryUrl>
+    <Description>SSH Tunnel for MongoDBMigrationsRZ</Description>
+    <PackageTags>mongo mongodb migration schema-migration csharp dotnet schema migrator database-migration database .net fluent api ci/cd azure cosmos cosmosdb aws documentdb</PackageTags>
+    <PackageLicenseFile>MIT.md</PackageLicenseFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="SSH.NET" Version="2024.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MongoDBMigrationsRZ\MongoDBMigrationsRZ.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../MIT.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

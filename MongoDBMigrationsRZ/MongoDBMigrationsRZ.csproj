@@ -15,7 +15,6 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
     <PackageTags>mongo mongodb migration schema-migration csharp dotnet schema migrator database-migration database .net fluent api ci/cd azure cosmos cosmosdb aws documentdb</PackageTags>
     <PackageReleaseNotes>ReleaseNotes.md</PackageReleaseNotes>
     <PackageLicenseFile>MIT.md</PackageLicenseFile>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <SynchReleaseVersion>false</SynchReleaseVersion>
     <RootNamespace>MongoDBMigrations</RootNamespace>
     <LangVersion>preview</LangVersion>
@@ -36,9 +35,7 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\MIT.md">
-      <Pack>True</Pack>
-    </None>
+    <None Include="../MIT.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>
