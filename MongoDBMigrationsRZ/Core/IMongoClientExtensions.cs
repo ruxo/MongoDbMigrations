@@ -16,7 +16,7 @@ namespace MongoDBMigrations.Core
             return instance;
         }
 
-        public static IMongoClient SetSsh(this IMongoClient instance, MigrationEngine.SshConfig config)
+        public static IMongoClient SetSsh(this IMongoClient instance, MigrationEngine.SshConfig? config)
         {
             if(config != null)
             {

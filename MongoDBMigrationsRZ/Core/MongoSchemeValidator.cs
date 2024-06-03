@@ -21,8 +21,7 @@ namespace MongoDBMigrations.Core
         /// List of method names in which the collection name is used.
         /// They were taken from the IMongoDatabase interface.
         /// </summary>
-        public List<string> MethodMarkers { get; } = new List<string>
-        {
+        public List<string> MethodMarkers { get; } = new() {
             "GetCollection", //IMongoDatabase
             "CreateCollection",
             "CreateCollectionAsync",

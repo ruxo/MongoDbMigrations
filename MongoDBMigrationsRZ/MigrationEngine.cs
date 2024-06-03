@@ -31,9 +31,9 @@ namespace MongoDBMigrations
         private bool _schemeValidationNeeded;
         private string _migrationProjectLocation;
         private CancellationToken _token = CancellationToken.None;
-        private IList<Action<InterimMigrationResult>> _progressHandlers;
+        readonly List<Action<InterimMigrationResult>> _progressHandlers = new();
 
-        private SshConfig _sshConfig;
+        private SshConfig? _sshConfig;
         private SslSettings _tlsSettings;
 
         static MigrationEngine()
@@ -93,23 +93,20 @@ namespace MongoDBMigrations
         }
 
         public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, string sshPassword, ServerAdressConfig mongoAddress)
-        { 
+        {
             return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, sshPassword), mongoAddress);
         }
 
         public MigrationEngine UseSshTunnel(ServerAdressConfig sshAdress, string sshUser, Stream privateKeyFileStream, ServerAdressConfig mongoAddress, string? keyFilePassPhrase = null)
         {
             var keyFile = keyFilePassPhrase == null ? new PrivateKeyFile(privateKeyFileStream) : new PrivateKeyFile(privateKeyFileStream, keyFilePassPhrase);
-            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, new[] { keyFile }), mongoAddress);
+            return EstablishConnectionViaSsh(new SshClient(sshAdress.Host, sshAdress.PortAsInt, sshUser, [keyFile]), mongoAddress);
         }
 
         public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-
-            if (this._progressHandlers == null)
-                this._progressHandlers = new List<Action<InterimMigrationResult>>();
 
             this._progressHandlers.Add(action);
 
@@ -192,13 +189,8 @@ namespace MongoDBMigrations
                     }
                     finally
                     {
-                        if (_progressHandlers != null && _progressHandlers.Any())
-                        {
-                            foreach (var action in _progressHandlers)
-                            {
-                                action(increment);
-                            }
-                        }
+                        foreach (var action in _progressHandlers)
+                            action(increment);
                         result.CurrentVersion = _status.GetVersion();
                     }
                 }
@@ -207,7 +199,7 @@ namespace MongoDBMigrations
             }
             finally
             {
-                if (_sshConfig != null && _sshConfig.SshClient.IsConnected)
+                if (_sshConfig is { SshClient.IsConnected: true })
                 {
                     _sshConfig.SshClient.Dispose();
                     _sshConfig.ForwardedPortLocal.Dispose();
@@ -215,7 +207,7 @@ namespace MongoDBMigrations
             }
         }
 
-        public MigrationResult Run(Version? version) => 
+        public MigrationResult Run(Version? version) =>
             RunInternal(version ?? _locator.GetNewestLocalVersion());
 
         public ISchemeValidation UseAssembly(Assembly assembly)
