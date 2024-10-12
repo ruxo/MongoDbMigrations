@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDBMigrations.SmokeTests.Migrations;
 
 namespace MongoDBMigrations.SmokeTests
 {
@@ -14,7 +16,7 @@ namespace MongoDBMigrations.SmokeTests
         [TestInitialize]
         public void SetUp() {
             _daemon = MongoDaemon.Prepare();
-            
+
             var db = new MongoClient(_daemon.ConnectionString).GetDatabase(_daemon.DatabaseName);
             //Create test collection with some data
             db.CreateCollection("clients");
@@ -75,6 +77,20 @@ namespace MongoDBMigrations.SmokeTests
                 .UseAssembly(Assembly.GetExecutingAssembly())
                 .UseSchemeValidation(false)
                 .Run(target);
+        }
+
+        [TestMethod]
+        public void WithNamespace() {
+            var actions = new List<string>();
+
+            var result = new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
+                .Use(MigrationSource.FromNamespaceOfType<_1_0_0_FirstMigrationTest>())
+                .UseSchemeValidation(false)
+                .UseProgressHandler(i => actions.Add(i.MigrationName))
+                .Run();
+
+            result.InterimSteps.Count.Should().BeGreaterThan(0);
+            actions.Count.Should().Be(result.InterimSteps.Count);
         }
 
         /*

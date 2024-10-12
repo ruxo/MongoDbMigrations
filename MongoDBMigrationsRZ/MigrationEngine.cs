@@ -20,7 +20,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
     readonly List<Action<InterimMigrationResult>> progressHandlers = new();
 
     IMongoDatabase database = default!;
-    IMigrationSource locator = MigrationSource.FromAssembly(MigrationManager.GetCurrentAssemblyMigrations());
+    IMigrationSource locator = MigrationSource.FromAssembly(MigrationLocator.GetCurrentAssemblyMigrations());
     DatabaseManager status = default!;
     bool schemeValidationNeeded;
     string migrationProjectLocation = string.Empty;
@@ -73,7 +73,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
     {
         try{
             var currentDatabaseVersion = status.GetVersion();
-            var migrations = MigrationManager.GetMigrationsForExecution(locator, currentDatabaseVersion, version);
+            var migrations = locator.GetMigrationsForExecution(currentDatabaseVersion, version);
 
             var result = new MigrationResult {
                 ServerAdress = string.Join(",", database.Client.Settings.Servers),
@@ -154,7 +154,12 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
 
     public ISchemeValidation UseAssembly(Assembly assembly)
     {
-        locator = new MigrationSource(new(MigrationManager.GetAllMigrations(assembly)), $"assembly {assembly.FullName!}");
+        locator = new MigrationSource(new(MigrationLocator.GetAllMigrations(assembly)), $"assembly {assembly.FullName!}");
+        return this;
+    }
+
+    public ISchemeValidation Use(IMigrationSource source) {
+        locator = source;
         return this;
     }
 
