@@ -1,3 +1,4 @@
+global using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using MongoDB.Driver;
@@ -10,208 +11,195 @@ using MongoDBMigrations.Document;
 using System.Security.Cryptography.X509Certificates;
 // ReSharper disable MemberCanBePrivate.Global
 
-namespace MongoDBMigrations
+namespace MongoDBMigrations;
+
+[PublicAPI]
+public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner, IMigrationEnginePluginSupport
 {
-    public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRunner, IMigrationEnginePluginSupport
+    readonly List<MigrationEnginePlugin> plugins = new();
+    readonly List<Action<InterimMigrationResult>> progressHandlers = new();
+
+    IMongoDatabase database = default!;
+    IMigrationSource locator = MigrationSource.FromAssembly(MigrationLocator.GetCurrentAssemblyMigrations());
+    DatabaseManager status = default!;
+    bool schemeValidationNeeded;
+    string migrationProjectLocation = string.Empty;
+    CancellationToken token = CancellationToken.None;
+
+    SslSettings? tlsSettings;
+
+    static MigrationEngine()
     {
-        readonly List<MigrationEnginePlugin> _plugins = new();
-        readonly List<Action<InterimMigrationResult>> _progressHandlers = new();
+        BsonSerializer.RegisterSerializer(typeof(Version), new VerstionStructSerializer());
+    }
 
-        private IMongoDatabase _database = default!;
-        private MigrationManager _locator = default!;
-        private DatabaseManager _status = default!;
-        private bool _schemeValidationNeeded;
-        private string _migrationProjectLocation = string.Empty;
-        private CancellationToken _token = CancellationToken.None;
+    public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
+    {
+        var setting = MongoClientSettings.FromConnectionString(connectionString);
+        var client = new MongoClient(setting);
+        return UseDatabase(client, databaseName, emulation);
+    }
 
-        private SslSettings? _tlsSettings;
-
-        static MigrationEngine()
+    public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None) {
+        var db = plugins.Aggregate(mongoClient.SetTls(tlsSettings), (client, plugin) => plugin.SetupMongoClient(client))
+                        .GetDatabase(databaseName);
+        return new MigrationEngine
         {
-            BsonSerializer.RegisterSerializer(typeof(Version), new VerstionStructSerializer());
-        }
+            database = db,
+            status = new DatabaseManager(db, emulation)
+        };
+    }
 
-        public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
-        {
-            var setting = MongoClientSettings.FromConnectionString(connectionString);
-            var client = new MongoClient(setting);
-            return UseDatabase(client, databaseName, emulation);
-        }
+    public MigrationEngine UseTls(X509Certificate2 certificate)
+    {
+        if (certificate == null)
+            throw new ArgumentNullException(nameof(certificate));
 
-        public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None) {
-            var database = _plugins.Aggregate(mongoClient.SetTls(_tlsSettings), (client, plugin) => plugin.SetupMongoClient(client))
-                                   .GetDatabase(databaseName);
-            return new MigrationEngine
-            {
-                _database = database,
-                _locator = new MigrationManager(),
-                _status = new DatabaseManager(database, emulation)
+        tlsSettings = new SslSettings { ClientCertificates = [certificate] };
+        return this;
+    }
+
+    public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action)
+    {
+        if (action == null)
+            throw new ArgumentNullException(nameof(action));
+
+        progressHandlers.Add(action);
+
+        return this;
+    }
+
+    MigrationResult RunInternal(Version version)
+    {
+        try{
+            var currentDatabaseVersion = status.GetVersion();
+            var migrations = locator.GetMigrationsForExecution(currentDatabaseVersion, version);
+
+            var result = new MigrationResult {
+                ServerAdress = string.Join(",", database.Client.Settings.Servers),
+                DatabaseName = database.DatabaseNamespace.DatabaseName,
+                InterimSteps = new List<InterimMigrationResult>(),
+                Success = true
             };
-        }
 
-        public MigrationEngine UseTls(X509Certificate2 certificate)
-        {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-
-            _tlsSettings = new SslSettings
-            {
-                ClientCertificates = new[] { certificate },
-            };
-            return this;
-        }
-
-        public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action)
-        {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
-            this._progressHandlers.Add(action);
-
-            return this;
-        }
-
-        private MigrationResult RunInternal(Version version)
-        {
-            try{
-                var currentDatabaseVersion = _status.GetVersion();
-                var migrations = _locator.GetMigrations(currentDatabaseVersion, version);
-
-                var result = new MigrationResult {
-                    ServerAdress = string.Join(",", _database.Client.Settings.Servers),
-                    DatabaseName = _database.DatabaseNamespace.DatabaseName,
-                    InterimSteps = new List<InterimMigrationResult>(),
-                    Success = true
-                };
-
-                if (!migrations.Any()){
-                    result.CurrentVersion = currentDatabaseVersion;
-                    return result;
-                }
-
-                if (_token.IsCancellationRequested){
-                    _token.ThrowIfCancellationRequested();
-                }
-
-                var isUp = version > currentDatabaseVersion;
-
-                if (_schemeValidationNeeded){
-                    var validator = new MongoSchemeValidator();
-                    var validationResult = validator.Validate(migrations, isUp, _migrationProjectLocation, _database);
-                    if (validationResult.FailedCollections.Any()){
-                        result.Success = false;
-                        var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
-                        throw new InvalidOperationException($"Some schema validation issues found in: {failedCollections}");
-                    }
-                }
-
-                int counter = 0;
-
-                foreach (var m in migrations){
-                    if (_token.IsCancellationRequested){
-                        _token.ThrowIfCancellationRequested();
-                    }
-
-                    counter++;
-                    var increment = new InterimMigrationResult();
-
-                    try{
-                        if (isUp)
-                            m.Up(_database);
-                        else
-                            m.Down(_database);
-
-                        var insertedMigration = _status.SaveMigration(m, isUp);
-
-                        increment.MigrationName = insertedMigration.Name;
-                        increment.TargetVersion = insertedMigration.Ver;
-                        increment.ServerAdress = result.ServerAdress;
-                        increment.DatabaseName = result.DatabaseName;
-                        increment.CurrentNumber = counter;
-                        increment.TotalCount = migrations.Count;
-                        result.InterimSteps.Add(increment);
-                    }
-                    catch (Exception ex){
-                        result.Success = false;
-                        throw new InvalidOperationException("Something went wrong during migration", ex);
-                    }
-                    finally{
-                        foreach (var action in _progressHandlers)
-                            action(increment);
-                        result.CurrentVersion = _status.GetVersion();
-                    }
-                }
+            if (!migrations.Any()){
+                result.CurrentVersion = currentDatabaseVersion;
                 return result;
-
             }
-            finally{
-                foreach (var plugin in _plugins)
-                    try{
-                        plugin.Dispose();
-                    }
-                    catch (Exception e){
-                        Console.WriteLine($"Dispose plugin {plugin.GetType().FullName} error: {e}");
-                    }
+
+            token.ThrowIfCancellationRequested();
+
+            var isUp = version > currentDatabaseVersion;
+
+            if (schemeValidationNeeded){
+                var validator = new MongoSchemeValidator();
+                var validationResult = validator.Validate(migrations, isUp, migrationProjectLocation, database);
+                if (validationResult.FailedCollections.Any()){
+                    result.Success = false;
+                    var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
+                    throw new InvalidOperationException($"Some schema validation issues found in: {failedCollections}");
+                }
             }
-        }
 
-        public MigrationResult Run(Version? version) =>
-            RunInternal(version ?? _locator.GetNewestLocalVersion());
+            int counter = 0;
 
-        public ISchemeValidation UseAssembly(Assembly assembly)
-        {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
-            this._locator.SetAssembly(assembly);
-            return this;
-        }
+            foreach (var m in migrations){
+                token.ThrowIfCancellationRequested();
 
-        public ISchemeValidation UseAssemblyOfType(Type type)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            this._locator.LookInAssemblyOfType(type);
-            return this;
-        }
+                counter++;
+                var increment = new InterimMigrationResult();
 
-        public ISchemeValidation UseAssemblyOfType<T>()
-        {
-            this._locator.LookInAssemblyOfType<T>();
-            return this;
-        }
+                try{
+                    if (isUp)
+                        m.Up(database);
+                    else
+                        m.Down(database);
 
-        public IMigrationRunner UseCancelationToken(CancellationToken token)
-        {
-            if (!token.CanBeCanceled)
-                throw new ArgumentException("Invalid token or it's canceled already.", nameof(token));
-            this._token = token;
-            return this;
-        }
+                    var insertedMigration = status.SaveMigration(m, isUp);
 
-        public IMigrationRunner UseSchemeValidation(bool enabled, string? location)
-        {
-            this._schemeValidationNeeded = enabled;
-            if (enabled)
-            {
-                if (string.IsNullOrEmpty(location))
-                    throw new ArgumentNullException(nameof(location));
-                this._migrationProjectLocation = location;
+                    increment.MigrationName = insertedMigration.Name;
+                    increment.TargetVersion = insertedMigration.Ver;
+                    increment.ServerAdress = result.ServerAdress;
+                    increment.DatabaseName = result.DatabaseName;
+                    increment.CurrentNumber = counter;
+                    increment.TotalCount = migrations.Length;
+                    result.InterimSteps.Add(increment);
+                }
+                catch (Exception ex){
+                    result.Success = false;
+                    throw new InvalidOperationException("Something went wrong during migration", ex);
+                }
+                finally{
+                    foreach (var action in progressHandlers)
+                        action(increment);
+                    result.CurrentVersion = status.GetVersion();
+                }
             }
-            return this;
-        }
+            return result;
 
-        public IMigrationRunner UseCustomSpecificationCollectionName(string name)
+        }
+        finally{
+            foreach (var plugin in plugins)
+                try{
+                    plugin.Dispose();
+                }
+                catch (Exception e){
+                    Console.WriteLine($"Dispose plugin {plugin.GetType().FullName} error: {e}");
+                }
+        }
+    }
+
+    public MigrationResult Run(Version? version)
+        => RunInternal(version ?? locator.NewestLocalVersion);
+
+    public ISchemeValidation UseAssembly(Assembly assembly)
+    {
+        locator = new MigrationSource(new(MigrationLocator.GetAllMigrations(assembly)), $"assembly {assembly.FullName!}");
+        return this;
+    }
+
+    public ISchemeValidation Use(IMigrationSource source) {
+        locator = source;
+        return this;
+    }
+
+    public ISchemeValidation UseAssemblyOfType(Type type)
+        => UseAssembly(type.Assembly);
+
+    public ISchemeValidation UseAssemblyOfType<T>()
+        => UseAssembly(typeof(T).Assembly);
+
+    public IMigrationRunner UseCancelationToken(CancellationToken token)
+    {
+        if (!token.CanBeCanceled)
+            throw new ArgumentException("Invalid token or it's canceled already.", nameof(token));
+        this.token = token;
+        return this;
+    }
+
+    public IMigrationRunner UseSchemeValidation(bool enabled, string? location)
+    {
+        schemeValidationNeeded = enabled;
+        if (enabled)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentNullException(nameof(name));
-            _status.SpecCollectionName = name;
-
-            return this;
+            if (string.IsNullOrEmpty(location))
+                throw new ArgumentNullException(nameof(location));
+            migrationProjectLocation = location;
         }
+        return this;
+    }
 
-        IMigrationEnginePluginSupport IMigrationEnginePluginSupport.AddPlugin(MigrationEnginePlugin plugin) {
-            _plugins.Add(plugin);
-            return this;
-        }
+    public IMigrationRunner UseCustomSpecificationCollectionName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            throw new ArgumentNullException(nameof(name));
+        status.SpecCollectionName = name;
+
+        return this;
+    }
+
+    IMigrationEnginePluginSupport IMigrationEnginePluginSupport.AddPlugin(MigrationEnginePlugin plugin) {
+        plugins.Add(plugin);
+        return this;
     }
 }

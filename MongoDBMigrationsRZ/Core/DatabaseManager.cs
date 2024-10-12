@@ -85,14 +85,14 @@ public class DatabaseManager
     {
         var lastMigration = GetLastAppliedMigration();
         if (lastMigration == null || lastMigration.isUp)
-            return lastMigration?.Ver ?? Version.Zero();
+            return lastMigration?.Ver ?? Version.Zero;
 
         var migration = GetAppliedMigrations()
                        .Find(item => item.isUp && item.Ver < lastMigration.Ver)
                        .Sort(Builders<SpecificationItem>.Sort.Descending(x => x.ApplyingDateTime))
                        .FirstOrDefault();
 
-        return migration?.Ver ?? Version.Zero();
+        return migration?.Ver ?? Version.Zero;
     }
 
     /// <summary>
