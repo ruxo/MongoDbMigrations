@@ -7,6 +7,11 @@ This library is published in Nuget as https://www.nuget.org/packages/MongoDBMigr
 
 # Changes
 
+## 1.2.0
+
+* Upgrade libraries
+* Add migrations by namespace (in addition from assembly)
+
 ## 1.1.0
 
 * As .NET 7 has been end of support, I remove .NET 6 and .NET 7 support from this library.
@@ -21,7 +26,7 @@ Below is the **original** README.md file content.
 
 You can support me in the development of this useful library. I have big plans you can find them in todo below. I will appreciate pizza and beer;)
 
-[Just follow the link, and donate me any amount you want :)](https://send.monobank.ua/PRwBX6QKN)
+[Just follow the link, and donate me any amount you want :)](https://send.monobank.ua/PRwBX6QKN) (Please note that this link is from the original author 😊, not mine) 
 
 MongoDBMigrations using the official [MongoDB C# Driver](https://github.com/mongodb/mongo-csharp-driver) to migrate your documents in database. This library supports on-premis Mongo instances, Azure CosmosDB (MongoAPI) and AWS DocumentDB.
 

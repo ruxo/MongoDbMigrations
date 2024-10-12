@@ -1,0 +1,13 @@
+﻿<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="MongoDbMigrations.SshTunnel\MongoDbMigrations.SshTunnel.csproj" Type="Classic C#" />
+    <Project Path="MongoDBMigrationsRZ\MongoDBMigrationsRZ.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="MongoDBMigrations.SmokeTests\MongoDBMigrations.SmokeTests.csproj" />
+  </Folder>
+</Solution>

@@ -23,15 +23,16 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="5.0.0">
+    <PackageReference Include="JetBrains.Annotations" Version="2024.2.0" />
+    <PackageReference Include="MinVer" Version="6.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MongoDB.Bson" Version="2.25.0" />
-    <PackageReference Include="MongoDB.Driver" Version="2.25.0" />
-    <PackageReference Include="Buildalyzer.Workspaces" Version="7.0.1" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.6" />
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.1" />
+    <PackageReference Include="MongoDB.Bson" Version="2.29.0" />
+    <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
+    <PackageReference Include="Buildalyzer.Workspaces" Version="7.0.2" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,19 +6,16 @@ namespace MongoDBMigrations;
 /// <summary>
 /// Semantic versioning
 /// </summary>
-public readonly struct Version : IComparable<Version>
+[PublicAPI]
+public readonly struct Version : IComparable<Version>, IEquatable<Version>
 {
-    private const char VERSION_SPLITTER = '.';
-    private const int MAX_LENGTH = 3;
+    const char VERSION_SPLITTER = '.';
+    const int MAX_LENGTH = 3;
     public readonly int Major;
     public readonly int Minor;
     public readonly int Revision;
 
-
-    public static Version Zero()
-    {
-        return new Version(0, 0, 0);
-    }
+    public static readonly Version Zero = new(0, 0, 0);
 
     public Version(string version)
     {
@@ -110,7 +107,7 @@ public readonly struct Version : IComparable<Version>
 
     #endregion
 
-    private static void ParseVersionPart(string value, out int target)
+    static void ParseVersionPart(string value, out int target)
     {
         if (!int.TryParse(value, out target))
             throw new InvalidVersionException(value);
