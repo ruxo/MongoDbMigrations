@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B3E21FC3-C9E8-C455-FCDE-F50AAA51C7AD}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E2ED7FF2-0B22-32CD-6AEE-3E86DDFD4EBD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDbMigrations.SshTunnel", "MongoDbMigrations.SshTunnel\MongoDbMigrations.SshTunnel.csproj", "{4B14BF77-CC7A-56DE-FF2E-2F3112BD851F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDBMigrationsRZ", "MongoDBMigrationsRZ\MongoDBMigrationsRZ.csproj", "{743EE9B0-4F6A-97D3-3DE8-A7190E47C3BC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{11ECFD39-D994-1242-B871-A28B2AA04A73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDBMigrations.SmokeTests", "MongoDBMigrations.SmokeTests\MongoDBMigrations.SmokeTests.csproj", "{C5480A65-DE3F-7677-AE62-CE962EB2F2E2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4B14BF77-CC7A-56DE-FF2E-2F3112BD851F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B14BF77-CC7A-56DE-FF2E-2F3112BD851F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B14BF77-CC7A-56DE-FF2E-2F3112BD851F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B14BF77-CC7A-56DE-FF2E-2F3112BD851F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{743EE9B0-4F6A-97D3-3DE8-A7190E47C3BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{743EE9B0-4F6A-97D3-3DE8-A7190E47C3BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{743EE9B0-4F6A-97D3-3DE8-A7190E47C3BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{743EE9B0-4F6A-97D3-3DE8-A7190E47C3BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5480A65-DE3F-7677-AE62-CE962EB2F2E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5480A65-DE3F-7677-AE62-CE962EB2F2E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5480A65-DE3F-7677-AE62-CE962EB2F2E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5480A65-DE3F-7677-AE62-CE962EB2F2E2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4B14BF77-CC7A-56DE-FF2E-2F3112BD851F} = {E2ED7FF2-0B22-32CD-6AEE-3E86DDFD4EBD}
+		{743EE9B0-4F6A-97D3-3DE8-A7190E47C3BC} = {E2ED7FF2-0B22-32CD-6AEE-3E86DDFD4EBD}
+		{C5480A65-DE3F-7677-AE62-CE962EB2F2E2} = {11ECFD39-D994-1242-B871-A28B2AA04A73}
+	EndGlobalSection
+EndGlobal
