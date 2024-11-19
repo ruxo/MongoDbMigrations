@@ -6,66 +6,67 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace MongoDBMigrations.SmokeTests
+namespace MongoDBMigrations.SmokeTests;
+
+[TestClass]
+public class SchemaValidatorTests
 {
-    [TestClass]
-    public class SchemaValidatorTests
+    MongoDaemon.ConnectionInfo daemon = default!;
+    IMongoCollection<BsonDocument> db = default!;
+
+    [TestInitialize]
+    public void SetUp() {
+        daemon = MongoDaemon.Prepare();
+        var database = new MongoClient(daemon.ConnectionString).GetDatabase(daemon.DatabaseName);
+        //Create test collection with some data
+        database.CreateCollection("clients");
+        db = database.GetCollection<BsonDocument>("clients");
+    }
+
+    [TestCleanup]
+    public void TearDown()
     {
-        MongoDaemon.ConnectionInfo _daemon;
-        IMongoCollection<BsonDocument> db;
+        daemon.Dispose();
+    }
 
-        [TestInitialize]
-        public void SetUp() {
-            _daemon = MongoDaemon.Prepare();
-            var database = new MongoClient(_daemon.ConnectionString).GetDatabase(_daemon.DatabaseName);
-            //Create test collection with some data
-            database.CreateCollection("clients");
-            db = database.GetCollection<BsonDocument>("clients");
-        }
+    static readonly Lazy<string> ProjectPath = new(() => {
+        var finder = new DirectoryInfo(Directory.GetCurrentDirectory());
+        FileInfo? file;
+        while ((file = finder!.EnumerateFiles("MongoDBMigrations.SmokeTests.csproj").FirstOrDefault()) is null)
+            finder = finder.Parent;
+        return file.FullName;
+    });
 
-        [TestCleanup]
-        public void TearDown()
-        {
-            _daemon.Dispose();
-        }
+    [TestMethod]
+    [ExpectedException(typeof(InvalidOperationException))]
+    public void ValidatorShouldThrowExceptionBecauseSchemaIsInconsistent()
+    {
+        Console.WriteLine($"Database = {daemon.DatabaseName}");
 
-        static readonly Lazy<string> ProjectPath = new(() => {
-            var finder = new DirectoryInfo(Directory.GetCurrentDirectory());
-            FileInfo file;
-            while ((file = finder.EnumerateFiles("MongoDBMigrations.SmokeTests.csproj").FirstOrDefault()) is null)
-                finder = finder.Parent;
-            return file.FullName;
+        db.InsertMany(new[]{
+            new BsonDocument{ {"name", "Alex"}, {"isActive", true}},
+            new BsonDocument{ {"name", "Max"}}
         });
+        var target = new Version(1,0,0);
+        new MigrationEngine().UseDatabase(daemon.ConnectionString, daemon.DatabaseName)
+                             .UseAssembly(Assembly.GetExecutingAssembly())
+                             .UseSchemeValidation(true, ProjectPath.Value)
+                             .Run(target);
+    }
 
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void ValidatorShouldThrowExceptionBecauseSchemaIsInconsistent()
-        {
-            db.InsertMany(new[]{
-                new BsonDocument{ {"name", "Alex"}, {"isActive", true}},
-                new BsonDocument{ {"name", "Max"}}
-            });
-            var target = new Version(1,0,0);
-            new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssembly(Assembly.GetExecutingAssembly())
-                .UseSchemeValidation(true, ProjectPath.Value)
-                .Run(target);
-        }
+    [TestMethod]
+    public void ValidatorShouldPass() {
+        db.InsertMany(new[]{
+            new BsonDocument{ { "name", "Alex" },{ "age", 17 } },
+            new BsonDocument{ { "name", "Max" },{ "age", 25 } }
+        });
+        var target = new Version(1, 0, 0);
+        var result = new MigrationEngine().UseDatabase(daemon.ConnectionString, daemon.DatabaseName)
+                                          .UseAssembly(Assembly.GetExecutingAssembly())
+                                          .UseSchemeValidation(true, ProjectPath.Value)
+                                          .Run(target);
 
-        [TestMethod]
-        public void ValidatorShouldPass() {
-            db.InsertMany(new[]{
-                new BsonDocument{ { "name", "Alex" },{ "age", 17 } },
-                new BsonDocument{ { "name", "Max" },{ "age", 25 } }
-            });
-            var target = new Version(1, 0, 0);
-            var result = new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                .UseAssembly(Assembly.GetExecutingAssembly())
-                .UseSchemeValidation(true, ProjectPath.Value)
-                .Run(target);
-
-            Assert.IsTrue(result.InterimSteps.Count > 0);
-            Assert.AreEqual(target, result.CurrentVersion);
-        }
+        Assert.IsTrue(result.InterimSteps.Count > 0);
+        Assert.AreEqual(target, result.CurrentVersion);
     }
 }
