@@ -6,9 +6,9 @@ using MongoDBMigrations.Document;
 
 namespace MongoDBMigrations;
 
+[PublicAPI]
 public static class MigrationLocator
 {
-    [PublicAPI]
     public static Assembly GetCurrentAssemblyMigrations() {
         var stackFrames = new StackTrace().GetFrames();
         if (stackFrames == null)
@@ -24,7 +24,6 @@ public static class MigrationLocator
     /// <param name="assembly">Assembly with migrations classes.</param>
     /// <param name="namespace">Specify a namespace to look for migration classes.</param>
     /// <returns>List of all found migrations.</returns>
-    [PublicAPI]
     public static IMigration[] GetAllMigrations(Assembly assembly, string? @namespace = null) {
         try{
             var result = assembly.GetTypes()
@@ -47,7 +46,6 @@ public static class MigrationLocator
         }
     }
 
-    [PublicAPI]
     public static IMigration[] GetMigrationFromNamespaceOfType<T>()
         => GetAllMigrations(typeof(T).Assembly, typeof(T).Namespace);
 }

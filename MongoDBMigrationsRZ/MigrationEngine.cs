@@ -19,9 +19,9 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
     readonly List<MigrationEnginePlugin> plugins = new();
     readonly List<Action<InterimMigrationResult>> progressHandlers = new();
 
-    IMongoDatabase database = default!;
+    IMongoDatabase database = null!;
     IMigrationSource locator = MigrationSource.FromAssembly(MigrationLocator.GetCurrentAssemblyMigrations());
-    DatabaseManager status = default!;
+    DatabaseManager status = null!;
     bool schemeValidationNeeded;
     string migrationProjectLocation = string.Empty;
     CancellationToken token = CancellationToken.None;
@@ -30,7 +30,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
 
     static MigrationEngine()
     {
-        BsonSerializer.RegisterSerializer(typeof(Version), new VerstionStructSerializer());
+        BsonSerializer.RegisterSerializer(typeof(Version), new VersionStructSerializer());
     }
 
     public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
