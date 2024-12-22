@@ -7,6 +7,14 @@ This library is published in Nuget as https://www.nuget.org/packages/MongoDBMigr
 
 # Changes
 
+## 1.4.0
+
+* (Minor) Pass `IClientSessionHandle` in `IMigration`'s `Up` and `Down` methods
+
+## 1.3.0
+
+* (Major) Upgrade to .NET 9
+
 ## 1.2.0
 
 * Upgrade libraries

@@ -18,11 +18,13 @@ public interface IMigration
     /// Roll forward method.
     /// </summary>
     /// <param name="database">Instance of MongoDatabase</param>
-    void Up(IMongoDatabase database);
+    /// <param name="session">Current migration session</param>
+    void Up(IMongoDatabase database, IClientSessionHandle session);
 
     /// <summary>
     /// Roll back method.
     /// </summary>
     /// <param name="database">Instance of MongoDatabase</param>
-    void Down(IMongoDatabase database);
+    /// <param name="session">Current migration session</param>
+    void Down(IMongoDatabase database, IClientSessionHandle session);
 }

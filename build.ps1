@@ -12,8 +12,6 @@ function build {
     Pop-Location
 }
 
-Push-Location ./src
-
 build .\MongoDBMigrationsRZ
 build .\MongoDBMigrations.SshTunnel
 
