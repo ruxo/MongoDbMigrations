@@ -101,23 +101,26 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                 }
             }
 
-            int counter = 0;
-
-            using var session = database.Client.StartSession();
-            var supportSession = false;
-            try{
-                session.StartTransaction();
-                supportSession = true;
-            }
-            catch (Exception){
-                Console.WriteLine("Mongo DB does not support session. Migration will be executed without session.");
-            }
+            var counter = 0;
 
             foreach (var m in migrations){
                 token.ThrowIfCancellationRequested();
 
                 counter++;
                 var increment = new InterimMigrationResult();
+
+                using var session = database.Client.StartSession();
+                var supportSession = false;
+                try{
+                    session.StartTransaction();
+                    supportSession = true;
+                }
+                catch (Exception){
+                    if (counter == 1)
+                        Console.WriteLine("Mongo DB does not support session. Migration will be executed without session.");
+                    else
+                        throw;
+                }
 
                 try{
                     if (isUp)
@@ -134,8 +137,13 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                     increment.CurrentNumber = counter;
                     increment.TotalCount = migrations.Length;
                     result.InterimSteps.Add(increment);
+
+                    if (supportSession)
+                        session.CommitTransaction(token);
                 }
                 catch (Exception ex){
+                    if (supportSession && session.IsInTransaction)
+                        session.AbortTransaction(token);
                     result.Success = false;
                     throw new InvalidOperationException("Something went wrong during migration", ex);
                 }
@@ -145,9 +153,6 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                     result.CurrentVersion = status.GetVersion();
                 }
             }
-
-            if (supportSession)
-                session.CommitTransaction(token);
             return result;
 
         }
