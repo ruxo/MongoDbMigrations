@@ -21,10 +21,8 @@ public static class MongoDaemon
 
     static readonly MongoRunnerOptions MongoOptions = new() {
         UseSingleNodeReplicaSet = true,
-        StandardOuputLogger = line => Trace.WriteLine($"| {line}"),
-        StandardErrorLogger = line => Trace.WriteLine($"ERR: {line}"),
-
-        KillMongoProcessesWhenCurrentProcessExits = true
+        StandardOutputLogger = line => Trace.WriteLine($"| {line}"),
+        StandardErrorLogger = line => Trace.WriteLine($"ERR: {line}")
     };
     static readonly IMongoRunner Server = MongoRunner.Run(MongoOptions);
 }

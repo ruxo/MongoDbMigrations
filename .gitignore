@@ -7,6 +7,8 @@ nupkg/
 .idea/
 publish/
 
+settings.local.json
+
 # Visual Studio Code
 .vscode
 

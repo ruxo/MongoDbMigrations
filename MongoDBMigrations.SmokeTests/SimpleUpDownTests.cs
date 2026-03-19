@@ -69,14 +69,14 @@ public sealed class SimpleUpDownTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(MigrationNotFoundException))]
     public void MigrationNotFoundShouldThrowException()
     {
         var target = new Version(99,99,99);
-        new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                             .UseAssembly(Assembly.GetExecutingAssembly())
-                             .UseSchemeValidation(false)
-                             .Run(target);
+        Assert.ThrowsExactly<MigrationNotFoundException>(() =>
+            new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
+                                 .UseAssembly(Assembly.GetExecutingAssembly())
+                                 .UseSchemeValidation(false)
+                                 .Run(target));
     }
 
     [TestMethod]

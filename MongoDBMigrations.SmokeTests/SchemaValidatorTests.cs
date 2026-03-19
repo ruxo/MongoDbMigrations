@@ -38,7 +38,6 @@ public class SchemaValidatorTests
     });
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidOperationException))]
     public void ValidatorShouldThrowExceptionBecauseSchemaIsInconsistent()
     {
         Console.WriteLine($"Database = {daemon.DatabaseName}");
@@ -48,10 +47,11 @@ public class SchemaValidatorTests
             new BsonDocument{ {"name", "Max"}}
         });
         var target = new Version(1,0,0);
-        new MigrationEngine().UseDatabase(daemon.ConnectionString, daemon.DatabaseName)
-                             .UseAssembly(Assembly.GetExecutingAssembly())
-                             .UseSchemeValidation(true, ProjectPath.Value)
-                             .Run(target);
+        Assert.ThrowsExactly<InvalidOperationException>(() =>
+            new MigrationEngine().UseDatabase(daemon.ConnectionString, daemon.DatabaseName)
+                                 .UseAssembly(Assembly.GetExecutingAssembly())
+                                 .UseSchemeValidation(true, ProjectPath.Value)
+                                 .Run(target));
     }
 
     [TestMethod]
