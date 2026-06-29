@@ -19,21 +19,21 @@ PS1 script for integration with CI/CD pipelines provides inside of the repositor
     <RootNamespace>MongoDBMigrations</RootNamespace>
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
       <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
+    <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageReference Include="MinVer" Version="7.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MongoDB.Bson" Version="3.7.1" />
-    <PackageReference Include="MongoDB.Driver" Version="3.7.1" />
-    <PackageReference Include="Buildalyzer.Workspaces" Version="8.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="10.0.5" />
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.5" />
+    <PackageReference Include="MongoDB.Bson" Version="3.9.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.9.0" />
+    <PackageReference Include="Buildalyzer.Workspaces" Version="9.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.9" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.9" />
   </ItemGroup>
 
   <ItemGroup>
