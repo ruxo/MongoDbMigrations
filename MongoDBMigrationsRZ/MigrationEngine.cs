@@ -39,12 +39,12 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
     }
 
     public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None) {
-        var db = plugins.Aggregate(mongoClient.SetTls(tlsSettings), (client, plugin) => plugin.SetupMongoClient(client))
-                        .GetDatabase(databaseName);
-        return new MigrationEngine {
-            database = db,
-            status = new DatabaseManager(db, emulation)
-        };
+        // NOTE: mutate and return `this` rather than constructing a new engine — a fresh engine would
+        // drop the already-registered `plugins`, so they would never be Dispose()d in RunInternal.
+        database = plugins.Aggregate(mongoClient.SetTls(tlsSettings), (client, plugin) => plugin.SetupMongoClient(client))
+                          .GetDatabase(databaseName);
+        status = new DatabaseManager(database, emulation);
+        return this;
     }
 
     public MigrationEngine UseTls(X509Certificate2 certificate) {
