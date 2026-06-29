@@ -7,6 +7,17 @@ This library is published in Nuget as https://www.nuget.org/packages/MongoDBMigr
 
 # Changes
 
+## 2.0.0
+
+* (Major) Upgrade to .NET 10
+* (Major) Introduce `RZ.Foundation`; `Run()` now returns `Outcome<MigrationResult>` instead of `MigrationResult` (breaking)
+* (Minor) Fix the migration version record being inserted outside the session transaction
+
+## 1.5.0
+
+* (Minor) Commit each migration in its own session/transaction
+* Upgrade libraries and test cases
+
 ## 1.4.0
 
 * (Minor) Pass `IClientSessionHandle` in `IMigration`'s `Up` and `Down` methods

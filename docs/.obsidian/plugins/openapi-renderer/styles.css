@@ -1,0 +1,134 @@
+.openapi-renderer-settings {
+    padding: 16px;
+    overflow-y: scroll;
+}
+
+.openapi-renderer-settings .react-obsidian-settings-item {
+    padding: 12px;
+    margin-bottom: 12px;
+    transition: box-shadow 0.3s ease;
+    border-bottom: 1px solid var(--color-base-30);
+}
+
+.openapi-renderer-settings
+    .react-obsidian-settings-item
+    .setting-item
+    .button-active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.openapi-renderer-settings .react-obsidian-settings-item:last-child {
+    border-bottom: none;
+}
+
+.openapi-renderer-settings .react-obsidian-settings-item.no-border {
+    border-bottom: none !important;
+}
+
+.openapi-renderer-settings input[type='text'],
+.openapi-renderer-settings input[type='number'] {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    width: 100%;
+}
+
+.openapi-renderer-settings .clickable-icon {
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.openapi-renderer-settings .clickable-icon:hover {
+    color: var(--text-normal);
+}
+
+.openapi-renderer-settings details {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    margin-top: 12px;
+    overflow: hidden;
+}
+
+.openapi-renderer-settings summary {
+    cursor: pointer;
+    padding: 12px;
+    background-color: var(--background-secondary);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.openapi-renderer-settings summary:hover {
+    background-color: var(--background-secondary-alt);
+    border-color: var(--background-modifier-border-hover);
+}
+
+.openapi-renderer-settings summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.3s ease;
+}
+
+.openapi-renderer-settings details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.openapi-renderer-settings details .setting-item {
+    border: none;
+    border-top: 1px solid var(--background-modifier-border);
+    border-radius: 0;
+    margin: 0;
+}
+
+.fill-height-or-more {
+    display: flex;
+    flex-direction: column;
+}
+
+.fill-height-or-more > div {
+    /* these are the flex items */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.newlines {
+    white-space: pre-line; /* Preserve newlines */
+}
+
+.required-field::after {
+    content: '*';
+    color: red;
+    margin-left: 0.2em;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.indicator {
+    animation: pulse 2s infinite;
+}
+
+.openapi-renderer-settings .invalid {
+    border: 2px solid red !important;
+}

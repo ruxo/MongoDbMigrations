@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MongoDBMigrationsRZ — a .NET 9 library for running MongoDB schema migrations via a fluent API. Fork of the original MongoDBMigrations, published as [MongoDBMigrationsRZ on NuGet](https://www.nuget.org/packages/MongoDBMigrationsRZ). Supports on-premise MongoDB, Azure CosmosDB (Mongo API), and AWS DocumentDB.
+MongoDBMigrationsRZ — a .NET 10 library for running MongoDB schema migrations via a fluent API. Fork of the original MongoDBMigrations, published as [MongoDBMigrationsRZ on NuGet](https://www.nuget.org/packages/MongoDBMigrationsRZ). Supports on-premise MongoDB, Azure CosmosDB (Mongo API), and AWS DocumentDB.
 
 ## Build & Test Commands
 
