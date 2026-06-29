@@ -9,5 +9,5 @@ public interface IMigrationRunner
     IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action);
     IMigrationRunner UseCancelationToken(CancellationToken token);
     IMigrationRunner UseCustomSpecificationCollectionName(string name);
-    MigrationResult Run(Version? version = default);
+    Outcome<MigrationResult> Run(Version? version = default);
 }

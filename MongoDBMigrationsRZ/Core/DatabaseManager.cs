@@ -11,22 +11,22 @@ namespace MongoDBMigrations;
 /// </summary>
 public class DatabaseManager
 {
-    private const string SPECIFICATION_COLLECTION_DEFAULT_NAME = "_migrations";
-    private string _specCollectionName = string.Empty;
-    private readonly IMongoDatabase _database;
+    const string SPECIFICATION_COLLECTION_DEFAULT_NAME = "_migrations";
+    readonly IMongoDatabase _database;
 
     public string SpecCollectionName
     {
+        get => string.IsNullOrEmpty(field) ? SPECIFICATION_COLLECTION_DEFAULT_NAME : field;
         set
         {
             if (!string.IsNullOrEmpty(value))
-                _specCollectionName = value;
+                field = value;
         }
-        get => string.IsNullOrEmpty(_specCollectionName) ? SPECIFICATION_COLLECTION_DEFAULT_NAME : _specCollectionName;
-    }
+    } = string.Empty;
 
     #region Compatibility Checks
-    private bool IsAzureCosmosDBCompatible(bool isInitial)
+
+    bool IsAzureCosmosDBCompatible(bool isInitial)
     {
         if(_database == null)
         {
@@ -72,7 +72,8 @@ public class DatabaseManager
         }
 
     }
-    private IMongoCollection<SpecificationItem> GetAppliedMigrations()
+
+    IMongoCollection<SpecificationItem> GetAppliedMigrations()
     {
         return _database.GetCollection<SpecificationItem>(SpecCollectionName);
     }

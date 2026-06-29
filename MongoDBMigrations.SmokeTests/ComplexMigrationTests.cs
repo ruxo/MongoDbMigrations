@@ -9,7 +9,7 @@ namespace MongoDBMigrations.SmokeTests
     public class ComplexMigrationTests
     {
         MongoDaemon.ConnectionInfo _daemon;
-        
+
         [TestInitialize]
         public void SetUp() {
             _daemon = MongoDaemon.Prepare();
@@ -47,8 +47,8 @@ namespace MongoDBMigrations.SmokeTests
                 .UseSchemeValidation(false)
                 .Run(downTarget);
 
-            Assert.AreEqual(downTarget, downMigrationResult.CurrentVersion);
-            Assert.IsTrue(downMigrationResult.Success);
+            Assert.AreEqual(downTarget, downMigrationResult.Unwrap().CurrentVersion);
+            Assert.IsTrue(downMigrationResult.Unwrap().Success);
 
             var upMigrationResult = new MigrationEngine()
                 .UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
@@ -56,7 +56,7 @@ namespace MongoDBMigrations.SmokeTests
                 .UseSchemeValidation(false)
                 .Run();
 
-            Assert.IsTrue(upMigrationResult.Success);
+            Assert.IsTrue(upMigrationResult.Unwrap().Success);
         }
     }
 }

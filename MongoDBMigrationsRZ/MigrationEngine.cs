@@ -1,4 +1,3 @@
-global using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using MongoDB.Driver;
@@ -9,6 +8,7 @@ using System.Threading;
 using System.Linq;
 using MongoDBMigrations.Document;
 using System.Security.Cryptography.X509Certificates;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace MongoDBMigrations;
@@ -28,13 +28,11 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
 
     SslSettings? tlsSettings;
 
-    static MigrationEngine()
-    {
+    static MigrationEngine() {
         BsonSerializer.RegisterSerializer(typeof(Version), new VersionStructSerializer());
     }
 
-    public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None)
-    {
+    public ILocator UseDatabase(string connectionString, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None) {
         var setting = MongoClientSettings.FromConnectionString(connectionString);
         var client = new MongoClient(setting);
         return UseDatabase(client, databaseName, emulation);
@@ -43,15 +41,13 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
     public ILocator UseDatabase(IMongoClient mongoClient, string databaseName, MongoEmulationEnum emulation = MongoEmulationEnum.None) {
         var db = plugins.Aggregate(mongoClient.SetTls(tlsSettings), (client, plugin) => plugin.SetupMongoClient(client))
                         .GetDatabase(databaseName);
-        return new MigrationEngine
-        {
+        return new MigrationEngine {
             database = db,
             status = new DatabaseManager(db, emulation)
         };
     }
 
-    public MigrationEngine UseTls(X509Certificate2 certificate)
-    {
+    public MigrationEngine UseTls(X509Certificate2 certificate) {
         if (certificate == null)
             throw new ArgumentNullException(nameof(certificate));
 
@@ -59,8 +55,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
         return this;
     }
 
-    public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action)
-    {
+    public IMigrationRunner UseProgressHandler(Action<InterimMigrationResult> action) {
         if (action == null)
             throw new ArgumentNullException(nameof(action));
 
@@ -69,8 +64,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
         return this;
     }
 
-    MigrationResult RunInternal(Version version)
-    {
+    Outcome<MigrationResult> RunInternal(Version version) {
         try{
             var currentDatabaseVersion = status.GetVersion();
             var migrations = locator.GetMigrationsForExecution(currentDatabaseVersion, version);
@@ -87,7 +81,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                 return result;
             }
 
-            token.ThrowIfCancellationRequested();
+            if (token.IsCancellationRequested) return ErrorInfo.New(CANCELLED);
 
             var isUp = version > currentDatabaseVersion;
 
@@ -97,30 +91,31 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                 if (validationResult.FailedCollections.Any()){
                     result.Success = false;
                     var failedCollections = string.Join(Environment.NewLine, validationResult.FailedCollections);
-                    throw new InvalidOperationException($"Some schema validation issues found in: {failedCollections}");
+                    return ErrorInfo.New(INVALID_REQUEST, $"Some schema validation issues found in: {failedCollections}");
                 }
             }
 
             var counter = 0;
+            bool? sessionSupported = null;
 
             foreach (var m in migrations){
-                token.ThrowIfCancellationRequested();
+                if (token.IsCancellationRequested) return ErrorInfo.New(CANCELLED);
 
-                counter++;
+                ++counter;
                 var increment = new InterimMigrationResult();
 
                 using var session = database.Client.StartSession();
-                var supportSession = false;
-                try{
-                    session.StartTransaction();
-                    supportSession = true;
-                }
-                catch (Exception){
-                    if (counter == 1)
+
+                var supportSession = sessionSupported ?? true;
+                if (sessionSupported is null){
+                    if (Fail(TryCatch(() => session.StartTransaction()), out _)){
+                        supportSession = false;
                         Console.WriteLine("Mongo DB does not support session. Migration will be executed without session.");
-                    else
-                        throw;
+                    }
+                    sessionSupported = supportSession;
                 }
+                else if (supportSession)
+                    session.StartTransaction();
 
                 try{
                     if (isUp)
@@ -145,7 +140,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                     if (supportSession && session.IsInTransaction)
                         session.AbortTransaction(token);
                     result.Success = false;
-                    throw new InvalidOperationException("Something went wrong during migration", ex);
+                    return ErrorFrom.Exception(ex);
                 }
                 finally{
                     foreach (var action in progressHandlers)
@@ -154,7 +149,9 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                 }
             }
             return result;
-
+        }
+        catch (Exception ex){
+            return ErrorFrom.Exception(ex);
         }
         finally{
             foreach (var plugin in plugins)
@@ -167,11 +164,10 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
         }
     }
 
-    public MigrationResult Run(Version? version)
+    public Outcome<MigrationResult> Run(Version? version)
         => RunInternal(version ?? locator.NewestLocalVersion);
 
-    public ISchemeValidation UseAssembly(Assembly assembly)
-    {
+    public ISchemeValidation UseAssembly(Assembly assembly) {
         locator = new MigrationSource(new(MigrationLocator.GetAllMigrations(assembly)), $"assembly {assembly.FullName!}");
         return this;
     }
@@ -187,19 +183,16 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
     public ISchemeValidation UseAssemblyOfType<T>()
         => UseAssembly(typeof(T).Assembly);
 
-    public IMigrationRunner UseCancelationToken(CancellationToken token)
-    {
+    public IMigrationRunner UseCancelationToken(CancellationToken token) {
         if (!token.CanBeCanceled)
             throw new ArgumentException("Invalid token or it's canceled already.", nameof(token));
         this.token = token;
         return this;
     }
 
-    public IMigrationRunner UseSchemeValidation(bool enabled, string? location)
-    {
+    public IMigrationRunner UseSchemeValidation(bool enabled, string? location) {
         schemeValidationNeeded = enabled;
-        if (enabled)
-        {
+        if (enabled){
             if (string.IsNullOrEmpty(location))
                 throw new ArgumentNullException(nameof(location));
             migrationProjectLocation = location;
@@ -207,8 +200,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
         return this;
     }
 
-    public IMigrationRunner UseCustomSpecificationCollectionName(string name)
-    {
+    public IMigrationRunner UseCustomSpecificationCollectionName(string name) {
         if (string.IsNullOrEmpty(name))
             throw new ArgumentNullException(nameof(name));
         status.SpecCollectionName = name;

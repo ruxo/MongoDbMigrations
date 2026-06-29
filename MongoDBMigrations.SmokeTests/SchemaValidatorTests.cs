@@ -42,16 +42,18 @@ public class SchemaValidatorTests
     {
         Console.WriteLine($"Database = {daemon.DatabaseName}");
 
-        db.InsertMany(new[]{
+        db.InsertMany([
             new BsonDocument{ {"name", "Alex"}, {"isActive", true}},
             new BsonDocument{ {"name", "Max"}}
-        });
+        ]);
         var target = new Version(1,0,0);
-        Assert.ThrowsExactly<InvalidOperationException>(() =>
-            new MigrationEngine().UseDatabase(daemon.ConnectionString, daemon.DatabaseName)
+        var result = new MigrationEngine().UseDatabase(daemon.ConnectionString, daemon.DatabaseName)
                                  .UseAssembly(Assembly.GetExecutingAssembly())
                                  .UseSchemeValidation(true, ProjectPath.Value)
-                                 .Run(target));
+                                 .Run(target);
+
+        Assert.IsTrue(Fail(result, out var e));
+        Assert.AreEqual(INVALID_REQUEST, e?.Code);
     }
 
     [TestMethod]
@@ -66,7 +68,7 @@ public class SchemaValidatorTests
                                           .UseSchemeValidation(true, ProjectPath.Value)
                                           .Run(target);
 
-        Assert.IsTrue(result.InterimSteps.Count > 0);
-        Assert.AreEqual(target, result.CurrentVersion);
+        Assert.IsTrue(result.Unwrap().InterimSteps.Count > 0);
+        Assert.AreEqual(target, result.Unwrap().CurrentVersion);
     }
 }

@@ -45,8 +45,8 @@ public sealed class SimpleUpDownTests
                     .UseSchemeValidation(false)
                     .Run(target);
 
-        Assert.IsTrue(result.InterimSteps.Count > 0);
-        Assert.AreEqual(target, result.CurrentVersion);
+        Assert.IsTrue(result.Unwrap().InterimSteps.Count > 0);
+        Assert.AreEqual(target, result.Unwrap().CurrentVersion);
     }
 
     [DataTestMethod]
@@ -63,20 +63,21 @@ public sealed class SimpleUpDownTests
                                           .UseProgressHandler((i) => actions.Add(i.MigrationName))
                                           .Run(target);
 
-        Assert.IsTrue(actions.Count == result.InterimSteps.Count);
-        Assert.IsTrue(result.InterimSteps.Count > 0);
-        Assert.AreEqual(target, result.CurrentVersion);
+        Assert.IsTrue(actions.Count == result.Unwrap().InterimSteps.Count);
+        Assert.IsTrue(result.Unwrap().InterimSteps.Count > 0);
+        Assert.AreEqual(target, result.Unwrap().CurrentVersion);
     }
 
     [TestMethod]
     public void MigrationNotFoundShouldThrowException()
     {
         var target = new Version(99,99,99);
-        Assert.ThrowsExactly<MigrationNotFoundException>(() =>
-            new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
-                                 .UseAssembly(Assembly.GetExecutingAssembly())
-                                 .UseSchemeValidation(false)
-                                 .Run(target));
+        var result = new MigrationEngine().UseDatabase(_daemon.ConnectionString, _daemon.DatabaseName)
+                                          .UseAssembly(Assembly.GetExecutingAssembly())
+                                          .UseSchemeValidation(false)
+                                          .Run(target);
+        Assert.IsTrue(Fail(result, out var e));
+        Assert.AreEqual(UNHANDLED, e?.Code);
     }
 
     [TestMethod]
@@ -89,8 +90,8 @@ public sealed class SimpleUpDownTests
                                           .UseProgressHandler(i => actions.Add(i.MigrationName))
                                           .Run();
 
-        Assert.IsTrue(result.InterimSteps.Count > 0);
-        Assert.AreEqual(actions.Count, result.InterimSteps.Count);
+        Assert.IsTrue(result.Unwrap().InterimSteps.Count > 0);
+        Assert.AreEqual(actions.Count, result.Unwrap().InterimSteps.Count);
     }
 
     /*
