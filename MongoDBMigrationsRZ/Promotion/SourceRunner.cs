@@ -42,7 +42,7 @@ public sealed class SourceRunner(
 
         if (Fail(Guarded(() => step.Up(ctx), step.Name), out var ue))
         {
-            if (session.IsInTransaction) session.AbortTransaction(ct);
+            if (session.IsInTransaction && Fail(TryCatch(() => session.AbortTransaction(ct)), out var ae)) return ae.Trace();
             return ue.Trace();
         }
 
@@ -64,8 +64,10 @@ public sealed class SourceRunner(
         return step.Id;
     }
 
-    // Errors-as-values boundary (spec §2.1): an escaped exception becomes a failed
-    // Outcome AND logs a warning nudging the author toward TryCatch.
+    // The one sanctioned try/catch: the library wraps the call to a user-authored step's
+    // Up/Down (special case) so a contract-violating throw becomes a failed Outcome WITH a
+    // warning instead of escaping. Engine code itself never wraps an Outcome-returning call —
+    // this boundary exists only because step bodies are user code that may break the contract.
     static Outcome<Unit> Guarded(Func<Outcome<Unit>> body, string stepName)
     {
         try

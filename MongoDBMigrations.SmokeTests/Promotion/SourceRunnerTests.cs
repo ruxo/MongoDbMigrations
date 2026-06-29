@@ -87,9 +87,12 @@ public sealed class SourceRunnerTests
     [TestMethod]
     public void Throwing_step_is_caught_as_failure_and_does_not_advance()
     {
+        // The library wraps the user step's Up call (the one sanctioned try/catch), so a step
+        // that throws is converted to a failed Outcome (with a warning), not escaped.
         var result = Runner(new InsertStep(1, "a"), new ThrowingStep(2)).Apply();
 
         Assert.IsTrue(Fail(result, out _));
         Assert.AreEqual(1L, new CheckpointStore(_db).Current().Unwrap());
+        Assert.AreEqual(1L, Widgets());
     }
 }

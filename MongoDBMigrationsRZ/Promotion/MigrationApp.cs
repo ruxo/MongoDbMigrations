@@ -45,10 +45,13 @@ public sealed class MigrationApp
 
     public Outcome<long> ApplySource(string connectionString, string databaseName, CancellationToken ct = default)
     {
-        var db = new MongoClient(connectionString).GetDatabase(databaseName);
+        if (Fail(TryCatch(() => new MongoClient(connectionString).GetDatabase(databaseName)), out var e, out var db)) return e.Trace();
         return new SourceRunner(db, new CheckpointStore(db), sourceSteps, ct).Apply();
     }
 
     public static Outcome<long> CurrentCheckpoint(string connectionString, string databaseName)
-        => new CheckpointStore(new MongoClient(connectionString).GetDatabase(databaseName)).Current();
+    {
+        if (Fail(TryCatch(() => new MongoClient(connectionString).GetDatabase(databaseName)), out var e, out var db)) return e.Trace();
+        return new CheckpointStore(db).Current();
+    }
 }
