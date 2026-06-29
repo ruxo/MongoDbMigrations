@@ -14,11 +14,9 @@ public class DatabaseManager
     const string SPECIFICATION_COLLECTION_DEFAULT_NAME = "_migrations";
     readonly IMongoDatabase _database;
 
-    public string SpecCollectionName
-    {
+    public string SpecCollectionName {
         get => string.IsNullOrEmpty(field) ? SPECIFICATION_COLLECTION_DEFAULT_NAME : field;
-        set
-        {
+        set {
             if (!string.IsNullOrEmpty(value))
                 field = value;
         }
@@ -26,10 +24,8 @@ public class DatabaseManager
 
     #region Compatibility Checks
 
-    bool IsAzureCosmosDBCompatible(bool isInitial)
-    {
-        if(_database == null)
-        {
+    bool IsAzureCosmosDBCompatible(bool isInitial) {
+        if (_database == null){
             throw new TypeInitializationException(nameof(DatabaseManager), new Exception($"{nameof(_database)} hasn't been initialized."));
         }
 
@@ -51,18 +47,15 @@ public class DatabaseManager
 
     #endregion
 
-    public DatabaseManager(IMongoDatabase database, MongoEmulationEnum emulation)
-    {
+    public DatabaseManager(IMongoDatabase database, MongoEmulationEnum emulation) {
         _database = database ?? throw new TypeInitializationException("Database can't be null", null);
         bool isInitial = false;
-        if (!_database.ListCollectionNames().ToList().Contains(SpecCollectionName))
-        {
+        if (!_database.ListCollectionNames().ToList().Contains(SpecCollectionName)){
             _database.CreateCollection(SpecCollectionName);
             isInitial = true;
         }
 
-        switch(emulation)
-        {
+        switch (emulation){
             case MongoEmulationEnum.AzureCosmos when !IsAzureCosmosDBCompatible(isInitial):
                 throw new InvalidOperationException($@"Your current setup isn't ready for this migration run.
                         Please create an ascending index to the filed '{SpecificationItem.ApplyDateTimeField}'
@@ -70,20 +63,16 @@ public class DatabaseManager
             default:
                 return;
         }
-
     }
 
     IMongoCollection<SpecificationItem> GetAppliedMigrations()
-    {
-        return _database.GetCollection<SpecificationItem>(SpecCollectionName);
-    }
+        => _database.GetCollection<SpecificationItem>(SpecCollectionName);
 
     /// <summary>
     /// Return database version based on last applied migration.
     /// </summary>
     /// <returns>Database version in semantic view.</returns>
-    public Version GetVersion()
-    {
+    public Version GetVersion() {
         var lastMigration = GetLastAppliedMigration();
         if (lastMigration == null || lastMigration.isUp)
             return lastMigration?.Ver ?? Version.Zero;
@@ -109,19 +98,17 @@ public class DatabaseManager
     /// <summary>
     /// Commit migration to the database.
     /// </summary>
+    /// <param name="session">Client session.</param>
     /// <param name="migration">Migration instance.</param>
     /// <param name="isUp">True if roll forward otherwise roll back.</param>
     /// <returns>Applied migration.</returns>
-    internal SpecificationItem SaveMigration(IMigration migration, bool isUp)
-    {
-        var appliedMigration = new SpecificationItem
-        {
+    internal Outcome<SpecificationItem> SaveMigration(IClientSessionHandle session, IMigration migration, bool isUp) {
+        var appliedMigration = new SpecificationItem {
             Name = migration.Name,
             Ver = migration.Version,
             isUp = isUp,
             ApplyingDateTime = DateTime.UtcNow
         };
-        GetAppliedMigrations().InsertOne(appliedMigration);
-        return appliedMigration;
+        return Fail(TryCatch(() => GetAppliedMigrations().InsertOne(session, appliedMigration)), out var e) ? e : appliedMigration;
     }
 }

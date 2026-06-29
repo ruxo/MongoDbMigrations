@@ -108,7 +108,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
 
                 var supportSession = sessionSupported ?? true;
                 if (sessionSupported is null){
-                    if (Fail(TryCatch(() => session.StartTransaction()), out _)){
+                    if (TryCatch(() => session.StartTransaction()).IsFail){
                         supportSession = false;
                         Console.WriteLine("Mongo DB does not support session. Migration will be executed without session.");
                     }
@@ -123,7 +123,7 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                     else
                         m.Down(database, session);
 
-                    var insertedMigration = status.SaveMigration(m, isUp);
+                    if (Fail(status.SaveMigration(session, m, isUp), out var e, out var insertedMigration)) return e.Trace();
 
                     increment.MigrationName = insertedMigration.Name;
                     increment.TargetVersion = insertedMigration.Ver;
@@ -139,7 +139,6 @@ public sealed class MigrationEngine : ILocator, ISchemeValidation, IMigrationRun
                 catch (Exception ex){
                     if (supportSession && session.IsInTransaction)
                         session.AbortTransaction(token);
-                    result.Success = false;
                     return ErrorFrom.Exception(ex);
                 }
                 finally{
