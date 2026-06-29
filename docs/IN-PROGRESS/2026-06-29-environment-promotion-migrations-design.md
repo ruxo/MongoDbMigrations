@@ -48,8 +48,9 @@ The engine follows an **errors-as-values** discipline built on `Outcome<T>` (RZ.
 
 - **Every library function with an expected failure mode returns `Outcome<T>`** — checkpoint-id/argument parsing, configuration & connection validation, environment-name resolution, registration/build checks (one Source, unique ids), checkpoint-drift detection, "step not found", and the rollback irreversibility verdict.
 - **Step bodies should return failures as values, not throw.** By convention a step wraps its MongoDB operations in the `TryCatch` helper, which converts a thrown driver error into a failed `Outcome` — so `Up`/`Down` hand back an `ErrorInfo`/`Outcome` failure instead of throwing, without manually threading `Outcome` through every line.
-- **The outer catch-all boundary is the safety net:** if an exception still escapes a step, the engine converts it into a failed `Outcome` (as `Run` does via `ErrorFrom.Exception`) **and logs a warning** that the step threw instead of returning an error value — flagging the deviation so the author wraps that operation in `TryCatch`.
-- **Throwing is reserved for genuine programmer errors**, and even those are caught at the boundary so the process exits cleanly with a non-zero code rather than an unhandled stack trace.
+- **Totality comes from the leaves, not from a wrapper.** Operations that genuinely throw — driver calls (`StartSession`/`StartTransaction`/`Commit`/`Abort`), `new MongoClient(...)`, parsing, validation — are wrapped at the **leaf** with `TryCatch`, turning a thrown error into a failed `Outcome`. The engine **never** puts a `try/catch` around a call that already returns `Outcome<T>`; doing so would assume the callee breaks its own contract.
+- **The _one_ sanctioned `try/catch` wraps the call to a user step's `Up`/`Down`** (special case). Step bodies are user code that may break the `Outcome<Unit>` contract, so the library guards exactly that call: a contract‑violating throw becomes a failed `Outcome` **and logs a warning** nudging the author toward `TryCatch`. This is the single exception to the rule above, justified only because the callee is untrusted.
+- **There is no other catch‑all.** A genuine bug inside the engine surfaces as an exception rather than being masked — the total‑by‑construction rule is what keeps engine functions from throwing in the first place.
 - **The CLI maps the final `Outcome` to a process exit code** (0 = success, non-zero = failure) and prints the error — so every command is CI/CD-friendly.
 
 This deliberately retires the 2.x `try/catch`-and-throw style (`Version` parse exceptions, config-setter argument guards, validator/locator throws) that still lingers after `Outcome<T>` was introduced.
@@ -205,7 +206,7 @@ public sealed class StepContext
 
 **Data-file convention:** on disk, copied to output, resolved by step id — e.g. `Dev/data/0007/countries.json`, opened as `ctx.OpenData("countries.json")`. (Embedded resources can be added later if a single-file deploy is needed; not required for v3.0.)
 
-Per the errors-as-values discipline (§2.1), the engine runs each `Up`/`Down` inside a catch-all boundary, so a thrown driver exception becomes a failed `Outcome`. `OpenData` may throw for a missing file and is caught the same way; a `TryOpenData` returning `Outcome<Stream>` is available when a step wants to handle a missing file explicitly.
+Per the errors-as-values discipline (§2.1), the library wraps the call to each `Up`/`Down` in the one sanctioned `try/catch`, so a thrown exception inside a step becomes a failed `Outcome` with a warning. `OpenData` may throw for a missing file and is caught the same way; a `TryOpenData` returning `Outcome<Stream>` lets a step handle a missing file explicitly.
 
 ## 6. Registering environments (the thin app)
 
