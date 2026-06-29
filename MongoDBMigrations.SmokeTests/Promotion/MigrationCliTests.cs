@@ -1,8 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDBMigrations;
 
 namespace MongoDBMigrations.SmokeTests.Promotion;
 
@@ -37,23 +35,23 @@ public sealed class MigrationCliTests
     [TestMethod]
     public async Task Apply_command_returns_zero_and_advances()
     {
-        var code = await MigrationCli.RunAsync(App(), new[] { "apply" }, _daemon.ConnectionString, _daemon.DatabaseName);
+        var code = await MigrationCli.RunAsync(App(), ["apply"], _daemon.ConnectionString, _daemon.DatabaseName);
 
         Assert.AreEqual(0, code);
-        Assert.AreEqual(2L, App().CurrentCheckpoint(_daemon.ConnectionString, _daemon.DatabaseName).Unwrap());
+        Assert.AreEqual(2L, MigrationApp.CurrentCheckpoint(_daemon.ConnectionString, _daemon.DatabaseName).Unwrap());
     }
 
     [TestMethod]
     public async Task Status_command_returns_zero()
     {
-        var code = await MigrationCli.RunAsync(App(), new[] { "status" }, _daemon.ConnectionString, _daemon.DatabaseName);
+        var code = await MigrationCli.RunAsync(App(), ["status"], _daemon.ConnectionString, _daemon.DatabaseName);
         Assert.AreEqual(0, code);
     }
 
     [TestMethod]
     public async Task Unknown_command_returns_two()
     {
-        var code = await MigrationCli.RunAsync(App(), new[] { "frobnicate" }, _daemon.ConnectionString, _daemon.DatabaseName);
+        var code = await MigrationCli.RunAsync(App(), ["frobnicate"], _daemon.ConnectionString, _daemon.DatabaseName);
         Assert.AreEqual(2, code);
     }
 
@@ -71,7 +69,7 @@ public sealed class MigrationCliTests
             .Source("dev", d => d.Step(new FailingStep(1)))
             .Build().Unwrap();
 
-        var code = await MigrationCli.RunAsync(app, new[] { "apply" }, _daemon.ConnectionString, _daemon.DatabaseName);
+        var code = await MigrationCli.RunAsync(app, ["apply"], _daemon.ConnectionString, _daemon.DatabaseName);
 
         Assert.AreEqual(1, code);
     }

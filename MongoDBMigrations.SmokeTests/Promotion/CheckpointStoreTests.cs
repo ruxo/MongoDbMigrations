@@ -1,7 +1,6 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Driver;
-using MongoDBMigrations;
 
 namespace MongoDBMigrations.SmokeTests.Promotion;
 

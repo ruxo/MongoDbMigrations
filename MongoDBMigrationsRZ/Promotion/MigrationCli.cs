@@ -20,7 +20,7 @@ public static class MigrationCli
 
             case "status":
                 return Task.FromResult(Finish(
-                    app.CurrentCheckpoint(connectionString, databaseName),
+                    MigrationApp.CurrentCheckpoint(connectionString, databaseName),
                     checkpoint => $"checkpoint = {checkpoint}"));
 
             default:

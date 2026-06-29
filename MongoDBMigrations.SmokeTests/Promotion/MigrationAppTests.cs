@@ -1,8 +1,6 @@
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDBMigrations;
 
 namespace MongoDBMigrations.SmokeTests.Promotion;
 
@@ -54,6 +52,6 @@ public sealed class MigrationAppTests
         var applied = app.ApplySource(_daemon.ConnectionString, _daemon.DatabaseName, CancellationToken.None);
 
         Assert.AreEqual(2L, applied.Unwrap());
-        Assert.AreEqual(2L, app.CurrentCheckpoint(_daemon.ConnectionString, _daemon.DatabaseName).Unwrap());
+        Assert.AreEqual(2L, MigrationApp.CurrentCheckpoint(_daemon.ConnectionString, _daemon.DatabaseName).Unwrap());
     }
 }

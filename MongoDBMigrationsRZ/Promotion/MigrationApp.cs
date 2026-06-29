@@ -49,6 +49,6 @@ public sealed class MigrationApp
         return new SourceRunner(db, new CheckpointStore(db), sourceSteps, ct).Apply();
     }
 
-    public Outcome<long> CurrentCheckpoint(string connectionString, string databaseName)
+    public static Outcome<long> CurrentCheckpoint(string connectionString, string databaseName)
         => new CheckpointStore(new MongoClient(connectionString).GetDatabase(databaseName)).Current();
 }

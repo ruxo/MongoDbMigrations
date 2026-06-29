@@ -15,36 +15,29 @@ public sealed class SourceRunner(
 {
     public Outcome<long> Apply()
     {
-        try
+        if (Fail(checkpoints.Current(), out var ce, out var current)) return ce.Trace();
+
+        var pending = steps.Where(s => s.Id > current).OrderBy(s => s.Id).ToArray();
+
+        foreach (var step in pending)
         {
-            if (Fail(checkpoints.Current(), out var ce, out var current))
-                return ce.Trace();
+            if (ct.IsCancellationRequested) return ErrorInfo.New(CANCELLED);
 
-            var pending = steps.Where(s => s.Id > current).OrderBy(s => s.Id).ToArray();
+            if (Fail(ApplyOne(step, current), out var se, out var to)) return se.Trace();
 
-            foreach (var step in pending)
-            {
-                if (ct.IsCancellationRequested)
-                    return ErrorInfo.New(CANCELLED);
-
-                if (Fail(ApplyOne(step, current), out var se, out var to))
-                    return se.Trace();
-
-                current = to;
-            }
-
-            return current;
+            current = to;
         }
-        catch (Exception ex)
-        {
-            return ErrorFrom.Exception(ex);
-        }
+
+        return current;
     }
 
     Outcome<long> ApplyOne(SourceStep step, long from)
     {
-        using var session = database.Client.StartSession();
-        session.StartTransaction();
+        if (Fail(TryCatch(() => database.Client.StartSession()), out var e, out var session)) return e.Trace();
+        using var _ = session;
+
+        if (Fail(TryCatch(() => session.StartTransaction()), out e)) return e.Trace();
+
         var ctx = new StepContext(database, session, ct);
 
         if (Fail(Guarded(() => step.Up(ctx), step.Name), out var ue))
@@ -59,13 +52,15 @@ public sealed class SourceRunner(
             From = from, To = step.Id, AppliedAtUtc = DateTime.UtcNow, Ok = true
         };
 
-        if (Fail(checkpoints.Append(session, record), out var ae))
+        if (Fail(checkpoints.Append(session, record), out e))
         {
-            if (session.IsInTransaction) session.AbortTransaction(ct);
-            return ae.Trace();
+            if (session.IsInTransaction && Fail(TryCatch(() => session.AbortTransaction(ct)), out var ae)) return ae.Trace();
+
+            return e.Trace();
         }
 
-        session.CommitTransaction(ct);
+        if (Fail(TryCatch(() => session.CommitTransaction(ct)), out e)) return e.Trace();
+
         return step.Id;
     }
 

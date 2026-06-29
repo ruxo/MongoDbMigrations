@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MongoDBMigrations;
 
 namespace MongoDBMigrations.SmokeTests.Promotion;
 
