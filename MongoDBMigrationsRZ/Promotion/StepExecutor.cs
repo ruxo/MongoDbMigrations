@@ -15,7 +15,8 @@ static class StepExecutor
         IMongoDatabase database, CheckpointStore checkpoints,
         MigrationStep step, CheckpointRecord record, CancellationToken ct)
     {
-        using var session = database.Client.StartSession();
+        if (Fail(TryCatch(() => database.Client.StartSession()), out var se, out var session)) return se.Trace();
+        using var _ = session;
 
         if (Fail(TryCatch(() => session.StartTransaction()), out var te)) return te.Trace();
 
