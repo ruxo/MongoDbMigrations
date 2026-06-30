@@ -57,4 +57,16 @@ public sealed class CheckpointStoreTests
 
         Assert.AreEqual(2L, store.Current().Unwrap());
     }
+
+    [TestMethod]
+    public void Current_ignores_records_that_are_not_ok()
+    {
+        var store = new CheckpointStore(_db);
+        using var session = _db.Client.StartSession();
+
+        store.Append(session, new CheckpointRecord { To = 3, Ok = true,  AppliedAtUtc = DateTime.UtcNow });
+        store.Append(session, new CheckpointRecord { To = 99, Ok = false, AppliedAtUtc = DateTime.UtcNow });
+
+        Assert.AreEqual(3L, store.Current().Unwrap());   // the ok=false record is ignored
+    }
 }

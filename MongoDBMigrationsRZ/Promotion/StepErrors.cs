@@ -14,4 +14,9 @@ public static class StepErrors
 
     public static ErrorInfo Registration(string message)
         => ErrorInfo.New(RegistrationCode, message);
+
+    public const string NotEmptyCode = "migration.not_empty";
+
+    public static ErrorInfo NotEmpty(string env, long current)
+        => ErrorInfo.New(NotEmptyCode, $"Environment '{env}' is already initialized at checkpoint {current}; use 'apply', not 'new'.");
 }

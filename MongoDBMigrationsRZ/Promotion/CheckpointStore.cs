@@ -10,7 +10,7 @@ public sealed class CheckpointStore(IMongoDatabase database)
     IMongoCollection<CheckpointRecord> Log => database.GetCollection<CheckpointRecord>(CollectionName);
 
     public Outcome<long> Current()
-        => TryCatch(() => Last()?.To ?? 0L);
+        => TryCatch(() => LastOk()?.To ?? 0L);
 
     public Outcome<Unit> Append(IClientSessionHandle session, CheckpointRecord record)
         => TryCatch(() => {
@@ -20,6 +20,11 @@ public sealed class CheckpointStore(IMongoDatabase database)
 
     CheckpointRecord? Last()
         => Log.Find(FilterDefinition<CheckpointRecord>.Empty)
+              .SortByDescending(x => x.Seq)
+              .FirstOrDefault();
+
+    CheckpointRecord? LastOk()
+        => Log.Find(Builders<CheckpointRecord>.Filter.Eq(x => x.Ok, true))
               .SortByDescending(x => x.Seq)
               .FirstOrDefault();
 }
