@@ -35,7 +35,10 @@ static class StepExecutor
 
     static Outcome<Unit> AbortThen(IClientSessionHandle session, CancellationToken ct, ErrorInfo original)
     {
-        if (session.IsInTransaction && Fail(TryCatch(() => session.AbortTransaction(ct)), out var ae)) return ae.Trace();
+        // Always surface the original step failure; a failing abort is a secondary
+        // cleanup fault, warned about but never allowed to mask the root cause.
+        if (session.IsInTransaction && Fail(TryCatch(() => session.AbortTransaction(ct)), out var ae))
+            Console.Error.WriteLine($"WARN: abort failed after step failure [{ae.Code}] {ae.Message}");
         return original.Trace();
     }
 

@@ -46,6 +46,9 @@ public sealed class MigrationCliTests
     {
         var code = await MigrationCli.RunCliAsync(App(new Ins(1), new Ins(2)), new[] { "apply", "--env", "dev" }, Config("dev"));
         Assert.AreEqual(0, code);
+
+        var db = new MongoClient(_daemon.ConnectionString).GetDatabase(_daemon.DatabaseName);
+        Assert.AreEqual(2L, new CheckpointStore(db).Current().Unwrap());
     }
 
     [TestMethod]

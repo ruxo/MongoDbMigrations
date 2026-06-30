@@ -87,6 +87,8 @@ public sealed class MigrationApp
     {
         if (bootstrapStep is null)
             return ErrorInfo.New(INVALID_REQUEST, "No Bootstrap step registered.");
+        if (env != bootstrapName)
+            return ErrorInfo.New(INVALID_REQUEST, $"No Bootstrap environment named '{env}'.");
 
         return new BootstrapRunner(db, new CheckpointStore(db), bootstrapStep, env, ct).Apply();
     }
