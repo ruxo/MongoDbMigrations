@@ -95,19 +95,6 @@ public sealed class MigrationApp
 
     public bool Knows(string env) => env == sourceName || downstream.ContainsKey(env);
 
-    // Retained from M1 so the M1 CLI/tests keep compiling through Tasks 4-5; removed in Task 6.
-    public Outcome<long> ApplySource(string connectionString, string databaseName, CancellationToken ct = default)
-    {
-        if (Fail(TryCatch(() => new MongoClient(connectionString).GetDatabase(databaseName)), out var e, out var db)) return e.Trace();
-        return new SourceRunner(db, new CheckpointStore(db), sourceSteps, ct).Apply();
-    }
-
-    public static Outcome<long> CurrentCheckpoint(string connectionString, string databaseName)
-    {
-        if (Fail(TryCatch(() => new MongoClient(connectionString).GetDatabase(databaseName)), out var e, out var db)) return e.Trace();
-        return new CheckpointStore(db).Current();
-    }
-
     void EnsureMutable()
     {
         if (built) throw new InvalidOperationException("MigrationApp is built; register environments before Build().");
