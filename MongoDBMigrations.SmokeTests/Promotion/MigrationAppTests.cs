@@ -1,6 +1,7 @@
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace MongoDBMigrations.SmokeTests.Promotion;
 
@@ -8,24 +9,40 @@ namespace MongoDBMigrations.SmokeTests.Promotion;
 public sealed class MigrationAppTests
 {
     MongoDaemon.ConnectionInfo _daemon = null!;
+    IMongoDatabase _db = null!;
 
-    [TestInitialize] public void SetUp() => _daemon = MongoDaemon.Prepare();
-    [TestCleanup]    public void TearDown() => _daemon.Dispose();
+    [TestInitialize] public void SetUp()
+    {
+        _daemon = MongoDaemon.Prepare();
+        _db = new MongoClient(_daemon.ConnectionString).GetDatabase(_daemon.DatabaseName);
+    }
+    [TestCleanup] public void TearDown() => _daemon.Dispose();
 
-    sealed class InsertStep(long id) : SourceStep
+    sealed class Ins(long id) : SourceStep
     {
         public override long Id => id;
-        public override string Name => $"step-{id}";
+        public override string Name => $"s-{id}";
         public override Outcome<Unit> Up(StepContext ctx) => TryCatch(() =>
-            ctx.Database.GetCollection<BsonDocument>("widgets")
-               .InsertOne(ctx.Session, new BsonDocument("id", id)));
+            ctx.Database.GetCollection<BsonDocument>("w").InsertOne(ctx.Session, new BsonDocument("id", id)));
+    }
+    sealed class Delta(long from, long to) : DeltaStep
+    {
+        public override long From => from; public override long To => to;
+        public override string Name => $"d-{from}-{to}";
+        public override Outcome<Unit> Up(StepContext ctx) => TryCatch(() => { });
     }
 
+    MigrationApp Built() => MigrationApp.Create()
+        .Source("dev", d => d.Step(new Ins(1)).Step(new Ins(2)))
+        .Downstream("staging", new Delta(0, 2))
+        .Build().Unwrap();
+
     [TestMethod]
-    public void Build_rejects_duplicate_source_ids()
+    public void Build_rejects_duplicate_env_names()
     {
         var built = MigrationApp.Create()
-            .Source("dev", d => d.Step(new InsertStep(1)).Step(new InsertStep(1)))
+            .Source("dev", d => d.Step(new Ins(1)))
+            .Downstream("dev", new Delta(0, 1))          // name clash
             .Build();
 
         Assert.IsTrue(Fail(built, out var e));
@@ -33,25 +50,26 @@ public sealed class MigrationAppTests
     }
 
     [TestMethod]
-    public void Build_rejects_missing_source()
+    public void Build_freezes_registration()
     {
-        var built = MigrationApp.Create().Build();
-
-        Assert.IsTrue(Fail(built, out var e));
-        Assert.AreEqual(StepErrors.RegistrationCode, e?.Code);
+        var app = MigrationApp.Create().Source("dev", d => d.Step(new Ins(1))).Build().Unwrap();
+        Assert.ThrowsExactly<System.InvalidOperationException>(() => app.Downstream("staging", new Delta(0, 1)));
     }
 
     [TestMethod]
-    public void ApplySource_then_CurrentCheckpoint_reflects_progress()
+    public void Apply_dispatches_Source_by_role()
     {
-        var app = MigrationApp.Create()
-            .Source("dev", d => d.Step(new InsertStep(1)).Step(new InsertStep(2)))
-            .Build()
-            .Unwrap();
+        var app = Built();
 
-        var applied = app.ApplySource(_daemon.ConnectionString, _daemon.DatabaseName, CancellationToken.None);
+        Assert.AreEqual(2L, app.Apply("dev", _db, CancellationToken.None).Unwrap());
+        Assert.AreEqual(2L, app.Status(_db).Unwrap());
+    }
 
-        Assert.AreEqual(2L, applied.Unwrap());
-        Assert.AreEqual(2L, MigrationApp.CurrentCheckpoint(_daemon.ConnectionString, _daemon.DatabaseName).Unwrap());
+    [TestMethod]
+    public void Apply_to_unknown_env_is_invalid_request()
+    {
+        var app = Built();
+        Assert.IsTrue(Fail(app.Apply("nope", _db, CancellationToken.None), out var e));
+        Assert.AreEqual(INVALID_REQUEST, e?.Code);
     }
 }
