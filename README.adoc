@@ -1,0 +1,385 @@
+= MongoDBMigrationsRZ
+:toc: macro
+:toclevels: 3
+:source-highlighter: rouge
+:icons: font
+
+image:https://img.shields.io/nuget/v/MongoDBMigrationsRZ.svg?label=MongoDBMigrationsRZ[NuGet, link=https://www.nuget.org/packages/MongoDBMigrationsRZ]
+
+A **.NET 10** library for evolving MongoDB schemas safely across environments, built around an **environment-promotion** model. A fork of the original https://bitbucket.org/i_am_a_kernel/mongodbmigrations/src/master/[MongoDBMigrations], published on NuGet as https://www.nuget.org/packages/MongoDBMigrationsRZ[MongoDBMigrationsRZ].
+
+[NOTE]
+====
+This document describes the **3.0 promotion API as it stands today** on the `vNext` branch (milestone tag `3.0.0-alpha.2`).
+
+What works now: the **Source**, **Downstream**, and **Bootstrap** roles; per-environment checkpoints; per-step transactions; connection resolution from `IConfiguration`; and a config-driven CLI (`apply` / `status` / `new`). Rollback, `pending`, bundled-data helpers, and provider hardening are **not in this build** — see <<not-yet>>.
+
+The published **2.x** fluent `MigrationEngine` API (implement `IMigration`, then `new MigrationEngine().UseDatabase(...).UseAssembly(...).Run(version)`) is unaffected and remains what the NuGet package exposes until 3.0 ships. Full design: link:docs/IN-PROGRESS/2026-06-29-environment-promotion-migrations-design.md[`docs/IN-PROGRESS`].
+====
+
+toc::[]
+
+== Abstract
+
+In real deployments your databases sit at **different schema checkpoints**: Dev is ahead of Staging, which is ahead of Prod. During development you make _many_ small changes — some of which revert or redesign earlier ones. Replaying that churn onto Staging and Prod is noisy and risky.
+
+MongoDBMigrationsRZ inverts the usual model. Instead of embedding migrations inside your application and replaying a long version history everywhere, the **migration project _is_ the application** — a small .NET console app that DevOps runs. It is organized around three roles:
+
+* **Source** (e.g. `dev`) — an _append-only_ history of many fine-grained C# steps, applied one at a time. This is where you iterate.
+* **Downstream** (e.g. `staging`, `prod`) — each receives **one squashed delta**: the net effect of the Source's changes since that environment was last promoted, applied as a single clean change.
+* **Bootstrap** (e.g. `new`) — a single step that stands up a brand-new environment at the Source's current structure, without replaying the whole history.
+
+Each environment tracks its own **checkpoint** (a monotonic `long`) in its own database, so promotions are drift-verified and idempotent to re-run. Errors are returned as values (`Outcome<T>`), never thrown for expected failures, so every command drops cleanly into CI/CD.
+
+== The promotion model
+
+[source]
+----
+Migration project (a console app)
+├── Source     "dev"      → many ordered steps (append-only), each with a monotonic Id
+├── Bootstrap  "new"      → one step: build a fresh env to the Source's current checkpoint
+├── Downstream "staging"  → one squashed delta:  From → To
+├── Downstream "prod"     → one squashed delta:  From → To
+└── Program.cs            → registers each environment, then MigrationCli.RunCliAsync(app, args, config)
+----
+
+[cols="1,4", options="header"]
+|===
+| Concept | Behaviour
+
+| Source step
+| Has a monotonic `Id`. `apply` runs every step whose `Id` is greater than the env's checkpoint, in `Id` order, each in its own transaction, advancing the checkpoint to each step's `Id`.
+
+| Delta step
+| Declares `From → To`. The engine refuses to run it unless the target env is exactly at `From` (drift guard), then advances it to `To`. Re-running when the env is already at `To` is a no-op.
+
+| Bootstrap step
+| Declares the `To` it builds to. Runs only against an **empty** environment (checkpoint `0`), then sets the checkpoint to `To`.
+
+| Checkpoint
+| Stored append-only in a `_migration_state` collection inside each environment's own database. The current checkpoint is the `To` of the latest successful record.
+|===
+
+== Installing
+
+[source,bash]
+----
+dotnet add package MongoDBMigrationsRZ
+----
+
+The package brings in the MongoDB C# driver, `Microsoft.Extensions.Configuration.Abstractions`, and https://www.nuget.org/packages/RZ.Foundation[RZ.Foundation] (which provides `Outcome<T>`). Your migration steps return `Outcome<Unit>`, so the project that defines them needs a few `using`s. The simplest approach mirrors this repository — a `GlobalUsings.cs` in your migration project:
+
+[source,csharp]
+----
+// GlobalUsings.cs
+global using LanguageExt;                               // Unit
+global using RZ.Foundation;                             // Outcome<T>, .Unwrap()
+global using RZ.Foundation.Types;                       // ErrorInfo
+global using static RZ.Foundation.AOT.Prelude;          // TryCatch, Fail
+global using static RZ.Foundation.StandardErrorCodes;   // INVALID_REQUEST, CANCELLED, ...
+----
+
+The code samples below assume those usings are in place (plus `using MongoDBMigrations;`, `using MongoDB.Bson;`, `using MongoDB.Driver;` per file).
+
+== Writing migration steps
+
+A step is plain C# logic. Wrap MongoDB operations in the `TryCatch` helper so the step returns failures as values rather than throwing, and use the per-step transaction `Session` that `StepContext` hands you.
+
+`StepContext` exposes exactly three members:
+
+[cols="1,3", options="header"]
+|===
+| Member | Type
+| `ctx.Database`     | `IMongoDatabase` — the target environment's database
+| `ctx.Session`      | `IClientSessionHandle` — the transaction for this step; pass it to every driver call
+| `ctx.Cancellation` | `CancellationToken` — honored by the CLI (Ctrl-C)
+|===
+
+Every step also declares its **reversibility** — `Reversible`, `Lossy`, or `Irreversible` (the default). Today this is metadata you record honestly on each step; the rollback engine that consumes it lands in M3 (see <<not-yet>>).
+
+=== A Source step
+
+[source,csharp]
+----
+public sealed class _0001_CreateClients : SourceStep
+{
+    public override long Id => 1;
+    public override string Name => "Create clients collection with a firstName index";
+    public override Reversibility Reversibility => Reversibility.Reversible;
+
+    public override Outcome<Unit> Up(StepContext ctx) => TryCatch(() =>
+    {
+        var clients = ctx.Database.GetCollection<BsonDocument>("clients");
+        clients.Indexes.CreateOne(ctx.Session,
+            new CreateIndexModel<BsonDocument>(
+                Builders<BsonDocument>.IndexKeys.Ascending("firstName")));
+    });
+
+    // Optional: only override Down when the change is genuinely reversible.
+    // The base Down returns a "not reversible" failure by default.
+    public override Outcome<Unit> Down(StepContext ctx) => TryCatch(() =>
+        ctx.Database.DropCollection(ctx.Session, "clients"));
+}
+----
+
+Source steps must have **strictly increasing, unique** `Id`s — `Build()` (below) rejects a registration that violates this.
+
+=== A Downstream delta step
+
+When Dev is ahead, you author a **single squashed delta** representing the net change between two checkpoints. It declares the range it bridges:
+
+[source,csharp]
+----
+public sealed class _Staging_0_to_7 : DeltaStep
+{
+    public override long From => 0;     // the env must currently be at this checkpoint
+    public override long To   => 7;     // it will be here after Up
+    public override string Name => "Promote staging to dev checkpoint 7";
+    public override Reversibility Reversibility => Reversibility.Lossy;
+
+    public override Outcome<Unit> Up(StepContext ctx) => TryCatch(() =>
+    {
+        // The net effect of Dev steps 1..7, squashed — reverts/redesigns already collapsed out.
+        var clients = ctx.Database.GetCollection<BsonDocument>("clients");
+        clients.Indexes.CreateOne(ctx.Session,
+            new CreateIndexModel<BsonDocument>(
+                Builders<BsonDocument>.IndexKeys.Ascending("firstName")));
+        // ... further squashed operations ...
+    });
+}
+----
+
+=== A Bootstrap step
+
+[source,csharp]
+----
+public sealed class _BuildToCurrent : BootstrapStep
+{
+    public override long To => 7;       // matches the Source's current checkpoint
+    public override string Name => "Stand up a fresh environment at checkpoint 7";
+
+    public override Outcome<Unit> Up(StepContext ctx) => TryCatch(() =>
+    {
+        ctx.Database.CreateCollection(ctx.Session, "clients");
+        ctx.Database.GetCollection<BsonDocument>("clients").Indexes.CreateOne(ctx.Session,
+            new CreateIndexModel<BsonDocument>(
+                Builders<BsonDocument>.IndexKeys.Ascending("firstName")));
+    });
+}
+----
+
+== Wiring up the console app
+
+`Program.cs` registers each environment by **role + name**, builds (and validates) the registration, then hands the built app to the CLI. Note that `Build()` returns an `Outcome<MigrationApp>` — a bad registration (no Source, duplicate env names, non-increasing Source ids) is a value you handle, not an exception.
+
+[source,csharp]
+----
+using MongoDBMigrations;
+using Microsoft.Extensions.Configuration;
+
+var built = MigrationApp.Create()
+    .Source("dev", d => d
+        .Step(new _0001_CreateClients())
+        .Step(new _0002_RenameNameToFirstName())
+        .Step(new _0007_SeedCountries()))          // append-only; Ids strictly increasing
+    .Bootstrap("new", new _BuildToCurrent())        // optional, single step
+    .Downstream("staging", new _Staging_0_to_7())   // one squashed delta per env
+    .Downstream("prod",    new _Prod_0_to_5())
+    .Build();
+
+if (Fail(built, out var regError, out var app))
+{
+    Console.Error.WriteLine($"Invalid migration registration: [{regError.Code}] {regError.Message}");
+    return 2;
+}
+
+var config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: true)
+    .AddEnvironmentVariables()
+    .Build();
+
+return await MigrationCli.RunCliAsync(app, args, config);
+----
+
+== Configuring connections
+
+Environment **names** are your project's choice (in code). Their **connections** live in standard .NET configuration, keyed by the same name:
+
+[source,json]
+----
+{
+  "Migrations": {
+    "Environments": {
+      "dev":     { "ConnectionString": "mongodb://localhost/app_dev" },
+      "staging": { "ConnectionString": "mongodb://.../app_staging", "DatabaseName": "app_staging" },
+      "prod":    { "ConnectionString": "mongodb://.../app_prod" }
+    }
+  }
+}
+----
+
+[cols="1,3", options="header"]
+|===
+| Key | Meaning
+| `Migrations:Environments:<name>:ConnectionString` | required — the MongoDB connection string for that environment
+| `Migrations:Environments:<name>:DatabaseName`     | optional — defaults to the database named in the connection string
+|===
+
+The identity threads through three places by the same string: **registration (code) ↔ connection (config) ↔ `--env <name>` (CLI)**. A `--connection` override lets you point a command at a database that is not in config (handy for `new`); include the database name in that override's connection string.
+
+Secrets come from environment variables, user-secrets, or a secret store via the normal configuration providers — nothing migration-specific.
+
+== Running it
+
+The migration project is a normal console app, so you invoke it with `dotnet run -- <verb> [options]`.
+
+[cols="1,4", options="header"]
+|===
+| Command | Behaviour
+
+| `status --env <name>`
+| Print the environment's current checkpoint.
+
+| `apply --env <name>`
+| **Source** env: run every pending step (`Id > checkpoint`) in `Id` order, each in its own transaction. **Downstream** env: verify the env is at the delta's `From`, run the delta, advance to `To`.
+
+| `new --env <name>`
+| Run the registered Bootstrap step against an empty database, advancing it to the bootstrap's `To`. Fails if the env is already initialized.
+
+| `--connection <conn>`
+| _Option_ — override the configured connection string for the target env.
+|===
+
+A typical Dev session:
+
+[source,console]
+----
+$ dotnet run -- status --env dev
+dev: checkpoint = 0
+
+$ dotnet run -- apply --env dev
+dev: checkpoint now 7
+
+$ dotnet run -- status --env dev
+dev: checkpoint = 7
+----
+
+Promoting Dev → Staging (the delta verifies Staging is at its `From` before running):
+
+[source,console]
+----
+$ dotnet run -- apply --env staging
+staging: checkpoint now 7
+----
+
+Bootstrapping a fresh database that isn't in config yet:
+
+[source,console]
+----
+$ dotnet run -- new --env new --connection "mongodb://localhost/app_eu2"
+new: checkpoint now 7
+----
+
+=== Failures and exit codes
+
+Failures are printed to stderr as `FAILED [code] message` and mapped to a process exit code, so the app slots straight into a pipeline:
+
+[cols="1,5", options="header"]
+|===
+| Exit code | Meaning
+| `0` | the command succeeded
+| `1` | the operation failed — a returned `Outcome` error (drift, not-empty, unknown env, a failed or throwing step, an unresolvable connection)
+| `2` | a usage error — missing `--env`, or an unknown verb
+|===
+
+Representative failures (messages are verbatim from the engine):
+
+[source,console]
+----
+# Downstream env has drifted away from the delta's From checkpoint
+$ dotnet run -- apply --env staging
+FAILED [migration.drift] Environment 'staging' is at checkpoint 3, expected 0.
+
+# 'new' against an already-initialized environment (here the Bootstrap env "new")
+$ dotnet run -- new --env new
+FAILED [migration.not_empty] Environment 'new' is already initialized at checkpoint 7; use 'apply', not 'new'.
+
+# missing the required option
+$ dotnet run -- apply
+Missing required option: --env <name>.   # exit code 2
+----
+
+== Using the API directly
+
+The CLI is a thin wrapper; you can drive the built `MigrationApp` yourself. Each operation returns `Outcome<long>` — the new checkpoint on success — and never throws for expected failures.
+
+[source,csharp]
+----
+using MongoDB.Driver;
+using MongoDBMigrations;
+
+// Resolve a database however you like — directly, or via the same config helper the CLI uses:
+var db = new MongoClient("mongodb://localhost/app_dev").GetDatabase("app_dev");
+//   or:  Fail(ConnectionConfig.Resolve(config, "dev"), out var e, out var db)
+
+var outcome = app.Apply("dev", db, CancellationToken.None);   // Outcome<long>
+
+if (Fail(outcome, out var error, out var checkpoint))
+    Console.Error.WriteLine($"[{error.Code}] {error.Message}");
+else
+    Console.WriteLine($"dev is now at checkpoint {checkpoint}");
+----
+
+[cols="1,4", options="header"]
+|===
+| Method | Returns
+| `app.Apply(env, db, ct)` | `Outcome<long>` — dispatches to the Source or Downstream runner registered under `env`
+| `app.New(env, db, ct)`   | `Outcome<long>` — runs the Bootstrap step (only when `env` is the registered Bootstrap name)
+| `app.Status(db)`         | `Outcome<long>` — the current checkpoint stored in `db`
+| `app.Knows(env)`         | `bool` — whether `env` is a registered Source or Downstream target
+| `ConnectionConfig.Resolve(config, env, connectionOverride?)` | `Outcome<IMongoDatabase>`
+|===
+
+== Errors as values
+
+Every library function that can fail is **total**: it returns `Outcome<T>` and never throws for an expected failure. Totality comes from wrapping fallible leaf calls in `TryCatch` — which is why your step bodies use it too.
+
+The **one** sanctioned `try/catch` in the whole engine wraps the call to _your_ `Up`/`Down`. If a step body throws instead of returning an `Outcome` failure, the engine converts it to a failure **and logs a warning** nudging you to wrap the operation in `TryCatch`:
+
+[source,console]
+----
+WARN: step 'Create clients collection ...' threw instead of returning an Outcome failure;
+      wrap MongoDB operations in TryCatch. MongoCommandException: ...
+----
+
+When a step fails (or is cancelled), its transaction is aborted and the checkpoint is left untouched — the run stops at the last successful checkpoint.
+
+[#not-yet]
+== Not available yet
+
+To keep this honest about the current build, the following are **designed but not implemented** in `3.0.0-alpha.2`:
+
+* **Rollback** (`Down` execution) and the **reversibility pre-flight** that refuses to roll back through an `Irreversible` step. The `Reversibility` / `IrreversibleReason` metadata exists and should be set correctly now; the engine that consumes it arrives in M3.
+* **`pending`** and **`rollback`** CLI verbs (current verbs: `apply`, `status`, `new`). `status` prints the checkpoint number only — it does not yet list pending steps.
+* **Bundled data files** (`ctx.OpenData(...)`) — steps are pure C# for now; load any seed data with the driver directly.
+* **`backup` / `restore`** commands.
+* **Provider-specific handling** for Azure CosmosDB (Mongo API) and AWS DocumentDB — the per-step transaction assumes a session-capable deployment (a replica set). Managed Mongo-API services need the degradation handling planned for M4.
+* **Removal of the legacy 2.x `MigrationEngine` API**, which still ships in the NuGet package.
+
+== Roadmap
+
+3.0 is being built in milestones; each produces working, tested software.
+
+[cols="1,1,4", options="header"]
+|===
+| Milestone | State | Scope
+
+| M1 | ✅ done | Source role: Step model, `_migration_state` checkpoints, per-step transactions, registration builder + validation, minimal `apply`/`status` CLI. Errors-as-values throughout.
+| M2 | ✅ done (`3.0.0-alpha.2`) | Downstream `DeltaStep` (drift rejection, already-up-to-date short-circuit) and `BootstrapStep`; shared `StepExecutor`; connections from `IConfiguration` by `--env`; config-driven `RunCliAsync` (`apply`/`status`/`new`, `--env`/`--connection`, cancellation, exit codes).
+| M3 | planned | Rollback + reversibility pre-flight; `backup` / `restore`.
+| M4 | planned | Bundled-data ergonomics, CosmosDB/DocumentDB hardening, removal of the legacy 2.x API.
+|===
+
+== License
+
+link:MIT.md[MIT]. Free software.
